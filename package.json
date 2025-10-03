@@ -48,7 +48,8 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "prepare": "npm run build",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "pages": "npm run build && node tools/build-pages.mjs"
   },
   "sideEffects": false,
   "peerDependencies": {
