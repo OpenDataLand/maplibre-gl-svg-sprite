@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MapLibre styleimagemissing hook</title>
+  <link href="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { position: absolute; inset: 0; }
+    .info {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      max-width: 300px;
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+      line-height: 1.45;
+    }
+    .info h2 { margin: 0 0 6px; font-size: 16px; }
+    .info code { background: #f5f5f5; padding: 0 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="info">
+    <h2>styleimagemissing 101</h2>
+    <p>Whenever a style requests an unknown icon, we draw <code>marker.svg</code> on the fly.</p>
+    <p>Try tweaking <code>?width</code>, <code>?height</code>, or <code>?fg</code> in the style definition.</p>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
+  <script type="module">
+    import { loadLib } from './use-lib.js';
+    const { registerStyleImageMissingHandler } = await loadLib();
+
+    // Load the SVG we will rasterize when MapLibre asks for an icon.
+    const markerSvg = await fetch('./data/marker.svg').then((res) => res.text());
+
+    // Minimal style: OSM raster background + a GeoJSON layer.
+    const map = new window.maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '&copy; OpenStreetMap contributors'
+          },
+          restaurants: {
+            type: 'geojson',
+            data: './data/nj_restaurant.geojson'
+          }
+        },
+        layers: [
+          { id: 'basemap', type: 'raster', source: 'osm' },
+          {
+            id: 'pins',
+            type: 'symbol',
+            source: 'restaurants',
+            layout: {
+              // Note: no sprite provided. The handler below satisfies these requests.
+              'icon-image': 'marker?width=28&height=28&fg=%233fb1ce',
+              'icon-allow-overlap': true
+            }
+          }
+        ]
+      },
+      center: [-74.0683, 40.35],
+      zoom: 13
+    });
+
+    // Register the lazy loader. This keeps a tiny cache internally and cleans up on remove().
+    const unregister = registerStyleImageMissingHandler(map, {
+      svgIcons: { marker: markerSvg },
+      debug: false
+    });
+
+    map.on('remove', unregister);
+  </script>
+</body>
+</html>
