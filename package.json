@@ -2,7 +2,7 @@
   "name": "maplibre-gl-svg-sprite",
   "version": "0.1.0",
   "type": "module",
-  "description": "Render SVGs into PNG sprites + JSON metadata entirely in the browser (TypeScript)",
+  "description": "git remote add origin https://github.com/OpenDataLand/maplibre-gl-svg-sprite.git",
   "license": "MIT",
   "author": "maplibre-gl-svg-sprite contributors",
   "funding": {

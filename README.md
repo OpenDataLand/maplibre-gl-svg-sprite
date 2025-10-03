@@ -2,6 +2,8 @@
 
 Browser-only sprite packer for SVGs. Render a PNG sprite via Canvas, export a matching JSON layout, and plug directly into MapLibre — either by hosting files or using an in-memory custom protocol (no server required).
 
+👉 **Live demos:** https://opendataland.github.io/maplibre-gl-svg-sprite/
+
 Note: This project is inspired by the original spritezero work by the Mapbox team and the wider open-source community. Huge thanks for blazing the trail — this is a lean, browser-native take on that idea for MapLibre workflows.
 
 ### Why this exists
