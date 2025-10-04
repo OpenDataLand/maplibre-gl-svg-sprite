@@ -1,17 +1,18 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "plugin": ["typedoc-plugin-markdown"],
-  "entryPoints": ["src/index.ts"],
+  "entryPoints": [
+    "src/index.ts"
+  ],
   "out": "docs/api",
   "excludePrivate": true,
   "excludeProtected": true,
   "excludeInternal": true,
   "categorizeByGroup": false,
-  "hideBreadcrumbs": true,
-  
   "readme": "none",
   "name": "maplibre-gl-svg-sprite",
   "githubPages": false,
   "includeVersion": true,
-  "sort": ["source-order"]
+  "sort": [
+    "source-order"
+  ]
 }

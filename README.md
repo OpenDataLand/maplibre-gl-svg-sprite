@@ -125,13 +125,21 @@ Notes
   - `svg://` per‑icon flow: `/examples/maplibre-svg-protocol.html`
   - Animated helper demo: `/examples/maplibre-animated-svg.html`
 
-### Docs (Markdown)
+### Docs & Examples
 
-Generate API docs with TypeDoc (Markdown output suitable for GitHub):
+Build the HTML docs and demo bundle with:
+
+```bash
+npm run build-gh-pages
+```
+
+The command wipes `docs/`, runs the TypeScript build, generates the TypeDoc HTML reference in `docs/api/`, copies the compiled `dist/` bundle and everything under `examples/`, and writes `docs/index.html` that links to the API docs and each example. The `docs/` directory is ignored on `main`; run `npm run deploy` to publish the generated site to `gh-pages`.
+
+To regenerate just the API reference you can still run:
 
 ```bash
 npm run docs
-# opens at docs/api/README.md
+# output: docs/api/index.html
 ```
 
 Author API docs using JSDoc comments in the source. Only exported members from `src/index.ts` are included; mark internals with `@internal` to exclude.

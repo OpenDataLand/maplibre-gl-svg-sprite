@@ -49,7 +49,9 @@
     "test:coverage": "vitest run --coverage",
     "prepare": "npm run build",
     "docs": "typedoc",
-    "deploy": "bash scripts/deploy-gh-pages.sh"
+    "deploy": "bash scripts/deploy-gh-pages.sh",
+    "clean:docs": "rm -rf docs",
+    "build-gh-pages": "node scripts/build-gh-pages.mjs"
   },
   "sideEffects": false,
   "peerDependencies": {
@@ -64,7 +66,6 @@
     "@vitest/ui": "^3.2.4",
     "happy-dom": "^19.0.2",
     "typedoc": "^0.28.13",
-    "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "^5.9.3",
     "vite": "^7.1.9",
     "vitest": "^3.2.4"
