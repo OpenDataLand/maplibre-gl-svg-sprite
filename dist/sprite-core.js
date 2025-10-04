@@ -295,7 +295,7 @@ export async function registerOneShotSpriteFromIcons(maplibre, protocol, key, ic
  * @returns Function to unregister the protocol
  * @throws {Error} If maplibre doesn't have addProtocol/removeProtocol
  */
-export function registerSVGProtocol(maplibre, protocol, icons) {
+export function registerSVGProtocol(maplibre, protocol, icons, options = {}) {
     if (!maplibre || typeof maplibre.addProtocol !== 'function' || typeof maplibre.removeProtocol !== 'function') {
         throw new Error('Expected MapLibre module with addProtocol/removeProtocol');
     }
@@ -345,6 +345,11 @@ export function registerSVGProtocol(maplibre, protocol, icons) {
             if (!ctx)
                 throw new Error('Could not get 2D context');
             ctx.drawImage(bitmap, 0, 0, width, height);
+            const cssWidth = params.width ? Number(params.width) : width / pixelRatio;
+            const cssHeight = params.height ? Number(params.height) : height / pixelRatio;
+            if (options.postprocessCanvas) {
+                await options.postprocessCanvas(ctx, cssWidth, cssHeight, params);
+            }
             const blob = await canvasLikeToBlob(canvas, 'image/png');
             const buf = await blob.arrayBuffer();
             return respond({ data: buf });

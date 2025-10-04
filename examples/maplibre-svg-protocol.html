@@ -48,21 +48,24 @@
   <div id="map"></div>
   <details class="info" open>
     <summary>svg:// protocol with params</summary>
-    <p>SVG markup stays in memory – query parameters tweak colors, size, and pixel ratio.</p>
+    <p>SVG markup stays in memory – query parameters tweak colors, size, pixel ratio, and optional overlay text.</p>
     <ul id="svg-examples"></ul>
   </details>
 
   <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
   <script type="module">
     import { loadLib } from './use-lib.js';
-    const { registerSVGProtocol } = await loadLib();
+    const { registerSVGProtocol, ops } = await loadLib();
 
     const icons = {
       marker: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#3FB1CE"/><circle cx="12" cy="12" r="5" fill="#fff"/></svg>',
       star: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.9 6.1 6.7.9-4.8 4.6 1.2 6.7L12 17.8 6 20.3l1.2-6.7L2.4 9l6.7-.9L12 2z" fill="#F2C94C"/></svg>'
     };
 
-    const unregisterSVG = registerSVGProtocol(window.maplibregl, 'svg', icons);
+    const svgPostprocess = ops.chain(ops.overlayText());
+    const unregisterSVG = registerSVGProtocol(window.maplibregl, 'svg', icons, {
+      postprocessCanvas: svgPostprocess
+    });
 
     const style = {
       version: 8,
@@ -80,7 +83,8 @@
             type: 'FeatureCollection',
             features: [
               { type: 'Feature', properties: { icon: 'hot' }, geometry: { type: 'Point', coordinates: [-122.4194, 37.7749] } },
-              { type: 'Feature', properties: { icon: 'cool' }, geometry: { type: 'Point', coordinates: [-122.41, 37.78] } }
+              { type: 'Feature', properties: { icon: 'cool' }, geometry: { type: 'Point', coordinates: [-122.41, 37.78] } },
+              { type: 'Feature', properties: { icon: 'labeled' }, geometry: { type: 'Point', coordinates: [-122.405, 37.769] } }
             ]
           }
         }
@@ -106,13 +110,18 @@
       const variants = [
         {
           id: 'hot',
-          url: 'svg://marker.png?fg=%23ff3366&bg=%23003366&width=36&height=36&pixelRatio=2',
+          url: 'svg://marker?fg=%23ff3366&bg=%23003366&width=36&height=36&pixelRatio=2',
           description: 'Recolor marker + scale for HiDPI'
         },
         {
           id: 'cool',
-          url: 'svg://star.png?fg=%23f2c94c&width=56&height=56s',
+          url: 'svg://star?fg=%23f2c94c&width=28&height=28',
           description: 'Gold star with custom size'
+        },
+        {
+          id: 'labeled',
+          url: 'svg://marker?fg=%233fb1ce&bg=%23003366&width=40&height=40&text=LB&fontSize=18&textColor=%23ffffff',
+          description: 'Overlay text via ops.overlayText()'
         }
       ];
 

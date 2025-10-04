@@ -1,4 +1,9 @@
 import type { MapLibreLike } from './types/maplibre-like.js';
+import type { Postprocess } from './ops/index.js';
+export interface SVGProtocolOptions {
+    postprocessCanvas?: Postprocess;
+    debug?: boolean;
+}
 /** Input structure for an SVG icon */
 export interface SvgInput {
     /** Unique identifier for the icon */
@@ -180,4 +185,4 @@ export declare function registerOneShotSpriteFromIcons(maplibre: MapLibreLike, p
  * @returns Function to unregister the protocol
  * @throws {Error} If maplibre doesn't have addProtocol/removeProtocol
  */
-export declare function registerSVGProtocol(maplibre: MapLibreLike, protocol: string, icons: Record<string, string>): () => void;
+export declare function registerSVGProtocol(maplibre: MapLibreLike, protocol: string, icons: Record<string, string>, options?: SVGProtocolOptions): () => void;

@@ -3,163 +3,29 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>maplibre-gl-svg-sprite — Live Demos</title>
+    <title>maplibre-gl-svg-sprite — Live Examples</title>
     <style>
-      :root {
-        color-scheme: light;
-        --bg: #f1f5f9;
-        --card-bg: #ffffff;
-        --border: #d0d7de;
-        --text: #0f172a;
-        --muted: #5b6b83;
-        --accent: #2563eb;
-        font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-      header {
-        padding: 56px 7vw 36px;
-        background: linear-gradient(180deg, rgba(148, 163, 184, 0.25) 0%, rgba(148, 163, 184, 0) 65%);
-      }
-      header h1 {
-        margin: 0 0 12px;
-        font-size: clamp(34px, 6vw, 48px);
-        letter-spacing: -0.04em;
-      }
-      header p {
-        margin: 0;
-        max-width: 720px;
-        color: #475569;
-        font-size: 17px;
-        line-height: 1.6;
-      }
-      main {
-        flex: 1;
-        padding: 0 7vw 72px;
-        display: grid;
-        gap: 28px;
-      }
-      .section {
-        display: grid;
-        gap: 20px;
-      }
-      .section h2 {
-        margin: 0;
-        font-size: 22px;
-        letter-spacing: -0.01em;
-      }
-      .grid {
-        display: grid;
-        gap: 18px;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      }
-      a.card {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        padding: 22px 24px;
-        background: var(--card-bg);
-        border-radius: 16px;
-        border: 1px solid rgba(15, 23, 42, 0.05);
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-        color: inherit;
-        text-decoration: none;
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
-      }
-      a.card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 22px 45px rgba(15, 23, 42, 0.12);
-      }
-      .card .eyebrow {
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--accent);
-        font-weight: 700;
-      }
-      .card h3 {
-        margin: 0;
-        font-size: 18px;
-        letter-spacing: -0.01em;
-      }
-      .card p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.55;
-      }
-      footer {
-        padding: 36px 7vw 48px;
-        color: #64748b;
-        font-size: 14px;
-      }
-      footer a {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 600;
-      }
-      footer a:hover { text-decoration: underline; }
-      @media (max-width: 640px) {
-        header { padding: 40px 24px 28px; }
-        main { padding: 0 24px 56px; }
-        footer { padding: 32px 24px 40px; }
-      }
+      body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 40px; line-height: 1.6; color: #1e293b; }
+      h1 { margin-bottom: 0.4em; }
+      ul { list-style: none; padding: 0; }
+      li { margin: 0.4em 0; }
+      a { color: #2563eb; text-decoration: none; font-weight: 600; }
+      a:hover { text-decoration: underline; }
+      .note { margin-top: 2em; font-size: 0.9em; color: #475569; }
     </style>
   </head>
   <body>
-    <header>
-      <h1>maplibre-gl-svg-sprite demos</h1>
-      <p>Browser-only sprite generation, inline protocols, and <code>styleimagemissing</code> workflows. Everything you see here is generated directly in the browser — no build steps on the server.</p>
-    </header>
-
-    <main>
-      <section class="section">
-        <h2>Featured Flows</h2>
-        <div class="grid">
-          <a class="card" href="examples/quickstart.html">
-            <span class="eyebrow">Start Here</span>
-            <h3>Quickstart Demo</h3>
-            <p>Register a sprite protocol and plot MapLibre symbols in under 20 lines.</p>
-          </a>
-          <a class="card" href="examples/maplibre-svg-protocol.html">
-            <span class="eyebrow">Per-Icon SVG</span>
-            <h3>SVG Protocol with Params</h3>
-            <p>Tint, resize, and render SVG icons on demand via <code>svg://</code> URLs.</p>
-          </a>
-          <a class="card" href="examples/maplibre-styleimagemissing.html">
-            <span class="eyebrow">Dynamic Icons</span>
-            <h3>styleimagemissing Handler</h3>
-            <p>Compose overlay ops to paint icons the moment MapLibre requests them.</p>
-          </a>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>More Examples</h2>
-        <div class="grid">
-          <a class="card" href="examples/maplibre-icon-workflows.html">
-            <span class="eyebrow">Workflows</span>
-            <h3>Icon Workflows Showcase</h3>
-            <p>Stack overlays, text, and grids to build bespoke markers across New Jersey landmarks.</p>
-          </a>
-          <a class="card" href="examples/maplibre-manual-protocol.html">
-            <span class="eyebrow">Advanced</span>
-            <h3>Manual Protocol Builder</h3>
-            <p>Roll your own sprite assets and register a <code>sprite://</code> protocol manually.</p>
-          </a>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      Live demos for <a href="https://github.com/opendataland/maplibre-gl-svg-sprite">maplibre-gl-svg-sprite</a> · hosted from the <code>gh-pages</code> branch.
-    </footer>
+    <h1>maplibre-gl-svg-sprite</h1>
+    <p>Live demos published from the <code>main</code> branch.</p>
+    <ul>
+      <li><a href="examples/index.html">Examples Landing Page</a></li>
+      <li><a href="examples/quickstart.html">Quickstart Demo</a></li>
+      <li><a href="examples/maplibre-svg-protocol.html">SVG Protocol with Parameters</a></li>
+      <li><a href="examples/maplibre-styleimagemissing.html">styleimagemissing Workflow</a></li>
+      <li><a href="examples/maplibre-icon-workflows.html">Icon Workflows Showcase</a></li>
+      <li><a href="examples/maplibre-manual-protocol.html">Manual Protocol Example</a></li>
+      <li><a href="examples/maplibre-animated-svg.html">Animated SVG Helper</a></li>
+    </ul>
+    <p class="note">API reference is generated into <code>docs/api</code>. You can serve this folder via GitHub Pages or your Gitea Pages setup.</p>
   </body>
 </html>
