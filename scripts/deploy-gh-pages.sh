@@ -33,7 +33,7 @@ fi
 
 git worktree add "$WORKTREE_DIR" "$PAGES_BRANCH"
 
-rsync -av --delete "$BUILD_DIR"/ "$WORKTREE_DIR"/
+rsync -av --delete --exclude '.git' "$BUILD_DIR"/ "$WORKTREE_DIR"/
 
 cd "$WORKTREE_DIR"
 
