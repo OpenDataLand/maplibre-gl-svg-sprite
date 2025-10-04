@@ -8,3 +8,11 @@ coverage/
 tmp-consumer/
 maplibre-gl-svg-sprite-*.tgz
 .claude/
+/package.json
+/package-lock.json
+/src/
+/tools/
+/tsconfig.json
+/typedoc.json
+/vite.config.ts
+/vitest.config.ts

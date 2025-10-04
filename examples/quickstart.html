@@ -31,18 +31,35 @@
       background: #f8f9fa;
       padding: 30px;
       border-right: 1px solid #e0e0e0;
-      overflow-y: auto;
+      overflow: hidden;
     }
+    .sidebar summary {
+      list-style: none;
+      cursor: pointer;
+      margin: -30px -30px 20px;
+      padding: 30px;
+      display: grid;
+      gap: 12px;
+      align-items: start;
+      background: #f8f9fa;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .sidebar summary::-webkit-details-marker { display: none; }
     .sidebar h1 {
       font-size: 24px;
-      margin-bottom: 10px;
       color: #2d3748;
+      margin: 0;
     }
     .sidebar p {
       color: #718096;
       font-size: 14px;
       line-height: 1.6;
-      margin-bottom: 20px;
+      margin: 0;
+    }
+    .sidebar .summary-desc { margin-bottom: 0; }
+    .sidebar-body {
+      overflow-y: auto;
+      max-height: calc(100% - 60px);
     }
     .code-block {
       background: #2d3748;
@@ -106,18 +123,22 @@
         height: auto;
       }
       .sidebar { border-right: none; border-bottom: 1px solid #e0e0e0; }
+      .sidebar summary { margin: -20px -20px 16px; padding: 20px; }
+      .sidebar-body { max-height: none; }
       #map { height: 400px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="sidebar">
-      <div class="badge">✨ Live Demo</div>
-      <h1>SVG Sprites Made Easy</h1>
-      <p>Load SVG icons dynamically into MapLibre. No build step. No PNG files. Just pure SVG → sprite magic.</p>
-
-      <div class="code-block">
+    <details class="sidebar" open>
+      <summary>
+        <div class="badge">✨ Live Demo</div>
+        <h1>SVG Sprites Made Easy</h1>
+        <p class="summary-desc">Load SVG icons dynamically into MapLibre. No build step. No PNG files. Just pure SVG → sprite magic.</p>
+      </summary>
+      <div class="sidebar-body">
+        <div class="code-block">
         <code>&nbsp;&nbsp;<span class="comment">// 1. Load your SVGs</span>
 &nbsp;&nbsp;<span class="keyword">const</span> icons = [
 &nbsp;&nbsp;&nbsp;&nbsp;{ id: <span class="string">'marker'</span>, svg: markerSvg },
@@ -150,7 +171,8 @@
           <div class="stat-label">On Map</div>
         </div>
       </div>
-    </div>
+      </div>
+    </details>
 
     <div id="map"></div>
   </div>
