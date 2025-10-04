@@ -12,6 +12,9 @@ export {
 } from './missing-image.js';
 
 export type { ProtocolOptions, SpriteResult, SpriteJSON, SpriteAssets, ProtocolRegistry } from './sprite-core.js';
+export type { SVGProtocolOptions } from './sprite-core.js';
 export type { MissingImageHandlerOptions } from './missing-image.js';
 export * as ops from './ops/index.js';
 export type { MapLibreLike, MapLike } from './types/maplibre-like.js';
+export { createAnimatedSvgImage } from './utils/animated-svg.js';
+export type { AnimatedSvgOptions } from './utils/animated-svg.js';

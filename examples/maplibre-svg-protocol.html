@@ -20,7 +20,16 @@
       box-shadow: 0 6px 18px rgba(0,0,0,0.15);
       line-height: 1.45;
     }
-    .info h2 { margin: 0 0 6px; font-size: 16px; }
+    .info[open] { padding-bottom: 16px; }
+    .info summary {
+      margin: -12px -16px 6px;
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      list-style: none;
+    }
+    .info summary::-webkit-details-marker { display: none; }
     .info ul { margin: 6px 0 0; padding-left: 18px; }
     .info li { margin-bottom: 6px; }
     .info code {
@@ -37,23 +46,26 @@
   </head>
 <body>
   <div id="map"></div>
-  <div class="info">
-    <h2>svg:// protocol with params</h2>
-    <p>SVG markup stays in memory – query parameters tweak colors, size, and pixel ratio.</p>
+  <details class="info" open>
+    <summary>svg:// protocol with params</summary>
+    <p>SVG markup stays in memory – query parameters tweak colors, size, pixel ratio, and optional overlay text.</p>
     <ul id="svg-examples"></ul>
-  </div>
+  </details>
 
   <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
   <script type="module">
     import { loadLib } from './use-lib.js';
-    const { registerSVGProtocol } = await loadLib();
+    const { registerSVGProtocol, ops } = await loadLib();
 
     const icons = {
       marker: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#3FB1CE"/><circle cx="12" cy="12" r="5" fill="#fff"/></svg>',
       star: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.9 6.1 6.7.9-4.8 4.6 1.2 6.7L12 17.8 6 20.3l1.2-6.7L2.4 9l6.7-.9L12 2z" fill="#F2C94C"/></svg>'
     };
 
-    const unregisterSVG = registerSVGProtocol(window.maplibregl, 'svg', icons);
+    const svgPostprocess = ops.chain(ops.overlayText());
+    const unregisterSVG = registerSVGProtocol(window.maplibregl, 'svg', icons, {
+      postprocessCanvas: svgPostprocess
+    });
 
     const style = {
       version: 8,
@@ -71,7 +83,8 @@
             type: 'FeatureCollection',
             features: [
               { type: 'Feature', properties: { icon: 'hot' }, geometry: { type: 'Point', coordinates: [-122.4194, 37.7749] } },
-              { type: 'Feature', properties: { icon: 'cool' }, geometry: { type: 'Point', coordinates: [-122.41, 37.78] } }
+              { type: 'Feature', properties: { icon: 'cool' }, geometry: { type: 'Point', coordinates: [-122.41, 37.78] } },
+              { type: 'Feature', properties: { icon: 'labeled' }, geometry: { type: 'Point', coordinates: [-122.405, 37.769] } }
             ]
           }
         }
@@ -97,13 +110,18 @@
       const variants = [
         {
           id: 'hot',
-          url: 'svg://marker.png?fg=%23ff3366&bg=%23003366&width=36&height=36&pixelRatio=2',
+          url: 'svg://marker?fg=%23ff3366&bg=%23003366&width=36&height=36&pixelRatio=2',
           description: 'Recolor marker + scale for HiDPI'
         },
         {
           id: 'cool',
-          url: 'svg://star.png?fg=%23f2c94c&width=56&height=56s',
+          url: 'svg://star?fg=%23f2c94c&width=28&height=28',
           description: 'Gold star with custom size'
+        },
+        {
+          id: 'labeled',
+          url: 'svg://marker?fg=%233fb1ce&bg=%23003366&width=40&height=40&text=LB&fontSize=18&textColor=%23ffffff',
+          description: 'Overlay text via ops.overlayText()'
         }
       ];
 

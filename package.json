@@ -48,7 +48,8 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "prepare": "npm run build",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "deploy": "bash scripts/deploy-gh-pages.sh"
   },
   "sideEffects": false,
   "peerDependencies": {

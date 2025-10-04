@@ -18,6 +18,7 @@ From `src/index.ts` (mirrors into `dist/index.js`):
 - `registerOneShotSpriteFromIcons(...)` – serves each asset once then evicts.
 - `registerStyleImageMissingHandler(map, options)` – resolves `styleimagemissing` events by drawing SVGs/overlays.
 - `ops` namespace – utility overlay operations (`overlaySvg`, `overlayText`, `overlayGrid`, `spriteTint`, `chain`, etc.).
+- `createAnimatedSvgImage(map, id, svgMarkup, opts)` – helper for SMIL/CSS animated SVGs; snapshots frames into a custom style image (use sparingly due to CPU/GPU cost).
 
 ### Common Options
 - Most APIs accept `{ debug?: boolean }` to emit verbose logs.
@@ -58,6 +59,7 @@ dist/                      // build output (generated)
 - Avoid non-ASCII characters unless required.
 - Debug logging is guarded by `options.debug`.
 - Prefer `canvasLikeToBlob` when serializing canvases (worker-safe).
+- Animated SVG helper attaches an offscreen DOM node and can be CPU/GPU intensive; encourage limited use (single markers, short animations).
 
 ## Notes for Tooling
 - The project is ESM-only (`"type": "module"`).

@@ -28,4 +28,8 @@ export interface MapLike {
   hasImage?: (name: string) => boolean;
   /** Trigger a map repaint */
   triggerRepaint?: () => void;
+  /** Retrieve the map's canvas (MapLibre GL) */
+  getCanvas?: () => HTMLCanvasElement;
+  /** Fallback canvas reference for compat layers */
+  canvas?: HTMLCanvasElement;
 }

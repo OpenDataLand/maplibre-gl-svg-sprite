@@ -101,15 +101,20 @@ Two custom protocols help you integrate sprites and raw SVG icons without hostin
   - When: You want standard MapLibre sprite behavior without a server. Great for shipped styles or self‑contained demos.
   - Lifecycle: `oneShot` frees a ratio after first (json+png) serve; `ttlMs` evicts after a timeout. Keep the registry object around as long as the map/style might request it.
 
-- `svg://<id>.png?params`
+- `svg://<id>?params`
   - What: On‑the‑fly conversion of a single SVG (by id) into a PNG buffer with parameters.
-  - Register: `registerSVGProtocol(maplibre, 'svg', icons)` where `icons` is a map `{ id: svgMarkup }` (generated or hand‑built).
-  - Use: `map.loadImage('svg://marker.png?width=32&height=32&fg=%23ff3366&pixelRatio=2', cb)` or pass such URLs into sources that MapLibre will load.
-  - Params:
+  - Register: `registerSVGProtocol(maplibre, 'svg', icons, { postprocessCanvas })` where `icons` is a map `{ id: svgMarkup }` (generated or hand‑built) and `postprocessCanvas` can be an op or `ops.chain(...)`.
+  - Use: `map.loadImage('svg://marker?width=32&height=32&fg=%23ff3366&pixelRatio=2', cb)` or pass such URLs into sources that MapLibre will load.
+  - Common params (any others are forwarded to `postprocessCanvas`):
     - `width`, `height`: CSS pixels of the target image
     - `pixelRatio`: render density (defaults to device DPR)
     - `color`: fallback fill color
-    - `fg`, `bg`: recolor elements marked with `data-fg` / `data-bg` in your SVGs
+    - `fg`, `bg`: recolor elements marked with `data-fg` / `data-bg`
+    - `text`, `label`: content for `ops.overlayText`
+    - `fontSize`, `fontWeight`, `fontFamily`, `fontStyle`: typography
+    - `textColor`/`fill`, `textStroke`, `textStrokeWidth`, `textPadding`
+    - `textAnchor`/`anchor`: e.g. `left`, `center`, `right`, optionally `top` / `bottom`
+    - `tx`, `ty`: pixel offsets for overlay text
   - When: You need dynamic coloring/sizing per feature or want to avoid managing sprite sheets.
 
 Notes
@@ -118,6 +123,7 @@ Notes
 - Examples to explore:
   - `sprite://` end‑to‑end: `/examples/maplibre-quickstart.html` and `/examples/maplibre-protocol.html`
   - `svg://` per‑icon flow: `/examples/maplibre-svg-protocol.html`
+  - Animated helper demo: `/examples/maplibre-animated-svg.html`
 
 ### Docs (Markdown)
 
@@ -255,18 +261,20 @@ You can register a lightweight protocol to render individual icons from raw SVG 
 
 ```js
 import maplibregl from 'maplibre-gl';
-import { registerSVGProtocol } from './dist/index.js';
+import { registerSVGProtocol, ops } from './dist/index.js';
 
 const icons = {
   marker: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#3FB1CE"/></svg>',
   star:   '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.9 6.1 6.7.9-4.8 4.6 1.2 6.7L12 17.8 6 20.3l1.2-6.7L2.4 9l6.7-.9L12 2z" fill="#F2C94C"/></svg>'
 };
 
-const unregisterSVG = registerSVGProtocol(maplibregl, 'svg', icons);
+const unregisterSVG = registerSVGProtocol(maplibregl, 'svg', icons, {
+  postprocessCanvas: ops.chain(ops.overlayText())
+});
 
 // Example: fetch a tinted, resized PNG from an SVG
 // Prefer foreground/background params for multi-layer icons that mark elements with data-fg / data-bg
-const url = 'svg://marker.png?fg=%23ff3366&bg=%23003366&width=32&height=32&pixelRatio=2';
+const url = 'svg://marker?fg=%23ff3366&bg=%23003366&width=32&height=32&text=LB&fontSize=16&textColor=%23ffffff';
 map.loadImage(url, (err, image) => {
   if (err) throw err;
   map.addImage('marker-32', image);
@@ -274,6 +282,35 @@ map.loadImage(url, (err, image) => {
 
 // Later: unregisterSVG()
 ```
+### Animated SVGs (non-sprite helper)
+
+Sprites and the `svg://` protocol generate static images. If you need a pulsing/glowing marker authored as an animated SVG, sample it frame-by-frame and feed the pixels to a MapLibre `StyleImageInterface`. The library exposes `createAnimatedSvgImage` (see `/examples/maplibre-animated-svg.html`) which:
+
+- Mounts the animated SVG offscreen so SMIL/CSS animations advance.
+- Clones the current frame, rasters it to a canvas at 30 fps, and updates the style image.
+- Cleans up the DOM node when the map or animation ends.
+
+Note that continuously sampling frames can tax the CPU/GPU if you animate many icons or use high frame rates. Treat this helper as a targeted effect, not a replacement for sprites.
+
+```js
+import { createAnimatedSvgImage } from 'maplibre-gl-svg-sprite';
+
+const cleanup = createAnimatedSvgImage(map, 'pulse-icon', animatedSvgMarkup, {
+  width: 64,
+  height: 64,
+  fps: 30
+});
+
+map.addLayer({
+  id: 'pulse',
+  type: 'symbol',
+  source: 'points',
+  layout: { 'icon-image': 'pulse-icon', 'icon-allow-overlap': true }
+});
+
+map.on('remove', cleanup);
+```
+
 
 ### Bring your own SVG icon library
 
@@ -295,8 +332,9 @@ import maplibregl from 'maplibre-gl';
 import { registerSVGProtocol } from './dist/index.js';
 import icons from './dist/icons.generated.js';
 
-const unregisterSVG = registerSVGProtocol(maplibregl, 'svg', icons);
-// Now you can use svg://<id>.png?width=...&height=...&color=...
+const postprocess = ops.chain(ops.overlayText());
+const unregisterSVG = registerSVGProtocol(maplibregl, 'svg', icons, { postprocessCanvas: postprocess });
+// Now you can use svg://<id>?width=...&height=...&color=...&text=...
 ```
 
 To build a sprite from the same icons, map them to `buildSpriteRegistryFromIcons` inputs:

@@ -1,6 +1,12 @@
 import type { MapLibreLike } from './types/maplibre-like.js';
 import { svgToBitmap, canvasToBlob, canvasLikeToBlob } from './utils/image.js';
 import { parseQuery, applySvgParams } from './utils/params.js';
+import type { Postprocess } from './ops/index.js';
+
+export interface SVGProtocolOptions {
+  postprocessCanvas?: Postprocess;
+  debug?: boolean;
+}
 
 /** Input structure for an SVG icon */
 export interface SvgInput {
@@ -333,7 +339,8 @@ export async function registerOneShotSpriteFromIcons(
 export function registerSVGProtocol(
   maplibre: MapLibreLike,
   protocol: string,
-  icons: Record<string, string>
+  icons: Record<string, string>,
+  options: SVGProtocolOptions = {}
 ): () => void {
   if (!maplibre || typeof (maplibre as any).addProtocol !== 'function' || typeof (maplibre as any).removeProtocol !== 'function') {
     throw new Error('Expected MapLibre module with addProtocol/removeProtocol');
@@ -382,6 +389,11 @@ export function registerSVGProtocol(
       const ctx = (canvas as any).getContext('2d');
       if (!ctx) throw new Error('Could not get 2D context');
       ctx.drawImage(bitmap as CanvasImageSource, 0, 0, width, height);
+      const cssWidth = params.width ? Number(params.width) : width / pixelRatio;
+      const cssHeight = params.height ? Number(params.height) : height / pixelRatio;
+      if (options.postprocessCanvas) {
+        await options.postprocessCanvas(ctx as CanvasRenderingContext2D, cssWidth, cssHeight, params);
+      }
       const blob = await canvasLikeToBlob(canvas, 'image/png');
       const buf = await blob.arrayBuffer();
       return respond({ data: buf });
