@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MapLibre manual sprite protocol</title>
+  <link href="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { position: absolute; inset: 0; }
+    .info {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      max-width: 340px;
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+      line-height: 1.45;
+    }
+    .info[open] { padding-bottom: 16px; }
+    .info summary {
+      margin: -12px -16px 6px;
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      list-style: none;
+    }
+    .info summary::-webkit-details-marker { display: none; }
+    .info code { background: #f5f5f5; padding: 0 4px; border-radius: 4px; }
+    .info ol { margin: 6px 0; padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <details class="info" open>
+    <summary>Manual sprite protocol</summary>
+    <ol>
+      <li>Render SVGs into sprite assets (JSON + PNG bytes).</li>
+      <li>Register <code>sprite://demo</code> with <code>SpriteBuilder.registerMapLibreProtocol</code>.</li>
+      <li>Point the style at <code>sprite://demo</code>.</li>
+    </ol>
+    <p>
+      Tip: The helper <code>registerSpriteFromIcons</code> (alias of <code>registerProtocolFromIcons</code>)
+      wraps these steps for you. For example:
+    </p>
+    <pre style="background:#f5f5f5; padding:8px; border-radius:6px; overflow:auto"><code>
+import maplibregl from 'maplibre-gl';
+import { registerSpriteFromIcons } from 'maplibre-gl-svg-sprite';
+
+const icons = { marker: '&lt;svg width="24" height="24" ...&gt;...&lt;/svg&gt;' };
+await registerSpriteFromIcons(maplibregl, 'sprite', 'demo', icons, [1, 2]);
+// style.sprite = 'sprite://demo'
+    </code></pre>
+  </details>
+
+  <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
+  <script type="module">
+    import { loadLib } from './use-lib.js';
+    const { SpriteBuilder } = await loadLib();
+
+    // 1) Prepare the icon SVG and determine which pixel ratios to support.
+    const markerSvg = await fetch('./data/marker.svg').then((res) => res.text());
+    const ratios = [1, 2];
+
+    // 2) Build sprite assets for each ratio (PNG bytes + JSON metadata).
+    const assetsByRatio = {};
+    for (const ratio of ratios) {
+      const builder = new SpriteBuilder({ pixelRatio: ratio });
+      builder.addSvg('marker', markerSvg);
+      assetsByRatio[ratio] = await builder.exportAssets();
+    }
+
+    // 3) Register a custom protocol. Keys are sprite names; values are pixel-ratio maps.
+    const unregisterProtocol = SpriteBuilder.registerMapLibreProtocol(window.maplibregl, 'sprite', {
+      demo: assetsByRatio
+    }, {
+      debug: false
+    });
+
+    // 4) Use the protocol in a MapLibre style.
+    const map = new window.maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sprite: 'sprite://demo',
+        glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+        sources: {
+          restaurants: {
+            type: 'geojson',
+            data: './data/nj_restaurant.geojson'
+          }
+        },
+        layers: [
+          {
+            id: 'markers',
+            type: 'symbol',
+            source: 'restaurants',
+            layout: {
+              'icon-image': 'marker',
+              'icon-size': 0.9
+            }
+          }
+        ]
+      },
+      center: [-74.0683, 40.35],
+      zoom: 13
+    });
+
+    map.on('remove', () => unregisterProtocol());
+  </script>
+</body>
+</html>
