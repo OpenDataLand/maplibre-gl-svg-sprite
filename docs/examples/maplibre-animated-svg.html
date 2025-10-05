@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Animated SVG Icons with MapLibre</title>
+  <link href="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { position: absolute; inset: 0; }
+    details.info {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      max-width: 360px;
+      background: rgba(255,255,255,0.94);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      line-height: 1.45;
+    }
+    details.info[open] { padding-bottom: 16px; }
+    details.info summary {
+      margin: -12px -16px 6px;
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      list-style: none;
+    }
+    details.info summary::-webkit-details-marker { display: none; }
+    code {
+      background: #f5f5f5;
+      padding: 0 4px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <details class="info" open>
+    <summary>Animated SVG demo</summary>
+    <p>This example keeps an SVG with SMIL animation hidden under the map, snapshots each frame into a canvas, and feeds it into a MapLibre <code>StyleImageInterface</code>. Use this pattern when you need a pulsing/glowing marker that’s authored entirely in SVG.</p>
+    <ul>
+      <li>No changes to <code>registerSVGProtocol</code>; animation happens via a custom helper.</li>
+      <li>Frames are sampled at 30fps and uploaded with <code>map.addImage()</code>.</li>
+      <li>When the map is removed, the hidden SVG and timers are cleaned up.</li>
+    </ul>
+  </details>
+
+  <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
+  <script type="module">
+    import { loadLib } from './use-lib.js';
+    const { createAnimatedSvgImage } = await loadLib();
+
+    const map = new window.maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        center: [-74.006, 40.7128],
+        zoom: 12,
+        glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '&copy; OpenStreetMap contributors'
+          },
+          pulse: {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: [
+                { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [-74.006, 40.7128] } }
+              ]
+            }
+          }
+        },
+        layers: [
+          { id: 'basemap', type: 'raster', source: 'osm' },
+          {
+            id: 'pulse-layer',
+            type: 'symbol',
+            source: 'pulse',
+            layout: {
+              'icon-image': 'pulse-glow',
+              'icon-allow-overlap': true
+            }
+          }
+        ]
+      }
+    });
+
+    const pulseSvg = `
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Current location">
+  <!-- Tunables -->
+  <defs>
+    <style>
+      :root { --c:#00e5ff; } /* accent color */
+    </style>
+  </defs>
+
+  <!-- Ripples (two, out of phase) -->
+  <circle cx="32" cy="32" r="10" fill="none" stroke="var(--c)" stroke-width="2" opacity="0.6">
+    <animate attributeName="r" values="10;28" dur="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.6;0" dur="1.6s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="32" cy="32" r="10" fill="none" stroke="var(--c)" stroke-width="2" opacity="0.6">
+    <animate attributeName="r" values="10;28" dur="1.6s" begin="-0.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.6;0" dur="1.6s" begin="-0.8s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Soft glow behind the core -->
+  <circle cx="32" cy="32" r="8" fill="var(--c)" opacity="0.25">
+    <animate attributeName="r" values="8;10;8" dur="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.25;0.35;0.25" dur="1.6s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Core dot + thin ring -->
+  <circle cx="32" cy="32" r="6" fill="var(--c)"/>
+  <circle cx="32" cy="32" r="8.5" fill="none" stroke="var(--c)" stroke-width="1" opacity="0.6"/>
+
+  <!-- Optional subtle pulse of the core -->
+  <circle cx="32" cy="32" r="6" fill="var(--c)" opacity="0">
+    <animate attributeName="opacity" values="0;0.25;0" dur="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="r" values="6;7;6" dur="1.6s" repeatCount="indefinite"/>
+  </circle>
+</svg>`;
+
+    const removeAnimatedImage = createAnimatedSvgImage(map, 'pulse-glow', pulseSvg, {
+      width: 64,
+      height: 64,
+      fps: 30,
+      pixelRatio: 1,
+      loop: true
+    });
+
+    map.on('remove', () => removeAnimatedImage());
+  </script>
+</body>
+</html>
