@@ -2,9 +2,7 @@ import type { MapLike } from './types/maplibre-like.js';
 import { applySpriteTint } from './ops/index.js';
 import { parseQuery, applySvgParams } from './utils/params.js';
 import { svgToBitmap, blobToImage } from './utils/image.js';
-
-/** Registry mapping sprite keys to assets at different pixel ratios */
-export type ProtocolRegistry = Record<string, { 1: { json: Record<string, any>; png: ArrayBuffer }; 2?: { json: Record<string, any>; png: ArrayBuffer }; [ratio: number]: { json: Record<string, any>; png: ArrayBuffer } | undefined }>;
+import type { ProtocolRegistry } from './sprite-core.js';
 
 /**
  * Options for configuring the missing image handler

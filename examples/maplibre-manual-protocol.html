@@ -43,7 +43,18 @@
       <li>Register <code>sprite://demo</code> with <code>SpriteBuilder.registerMapLibreProtocol</code>.</li>
       <li>Point the style at <code>sprite://demo</code>.</li>
     </ol>
-    <p>The helper <code>registerProtocolFromIcons</code> wraps these steps, but it’s useful to see the pieces.</p>
+    <p>
+      Tip: The helper <code>registerSpriteFromIcons</code> (alias of <code>registerProtocolFromIcons</code>)
+      wraps these steps for you. For example:
+    </p>
+    <pre style="background:#f5f5f5; padding:8px; border-radius:6px; overflow:auto"><code>
+import maplibregl from 'maplibre-gl';
+import { registerSpriteFromIcons } from 'maplibre-gl-svg-sprite';
+
+const icons = { marker: '&lt;svg width="24" height="24" ...&gt;...&lt;/svg&gt;' };
+await registerSpriteFromIcons(maplibregl, 'sprite', 'demo', icons, [1, 2]);
+// style.sprite = 'sprite://demo'
+    </code></pre>
   </details>
 
   <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>

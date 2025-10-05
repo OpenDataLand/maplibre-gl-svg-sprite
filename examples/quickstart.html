@@ -145,7 +145,7 @@
 &nbsp;&nbsp;];
 
 &nbsp;&nbsp;<span class="comment">// 2. Register sprite protocol</span>
-&nbsp;&nbsp;<span class="keyword">await</span> registerProtocolFromIcons(
+&nbsp;&nbsp;<span class="keyword">await</span> registerSpriteFromIcons(
 &nbsp;&nbsp;&nbsp;&nbsp;maplibregl,
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="string">'sprite'</span>,
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="string">'my-icons'</span>,
@@ -179,7 +179,7 @@
   <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
   <script type="module">
     import { loadLib } from './use-lib.js';
-    const { registerProtocolFromIcons } = await loadLib();
+    const { registerSpriteFromIcons } = await loadLib();
 
     // Load SVG icons
     const markerSvg = await fetch('./data/marker.svg').then(r => r.text());
@@ -190,7 +190,7 @@
     ];
 
     // Register the sprite protocol BEFORE creating map
-    await registerProtocolFromIcons(
+    await registerSpriteFromIcons(
       window.maplibregl,
       'sprite',
       'my-icons',

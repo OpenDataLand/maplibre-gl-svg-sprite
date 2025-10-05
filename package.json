@@ -2,7 +2,7 @@
   "name": "maplibre-gl-svg-sprite",
   "version": "0.1.0",
   "type": "module",
-  "description": "git remote add origin https://github.com/OpenDataLand/maplibre-gl-svg-sprite.git",
+  "description": "Browser-first SVG → MapLibre sprite builder and in-memory protocols (no server).",
   "license": "MIT",
   "author": "maplibre-gl-svg-sprite contributors",
   "funding": {

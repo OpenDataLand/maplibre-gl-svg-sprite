@@ -25,10 +25,10 @@
 <body>
   <div id="map"></div>
   <div class="info">
-    <strong>Quickstart: registerProtocolFromIcons</strong>
+    <strong>Quickstart: registerSpriteFromIcons</strong>
     <ol style="margin:6px 0; padding-left:18px;">
       <li>Load your SVG markup.</li>
-      <li>Call <code>registerProtocolFromIcons</code> before creating the map.</li>
+      <li>Call <code>registerSpriteFromIcons</code> before creating the map.</li>
       <li>Point the style at <code>sprite://pack</code>.</li>
     </ol>
     <div id="preview-links" style="margin-top:6px; line-height:1.6;"></div>
@@ -37,7 +37,7 @@
   <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
   <script type="module">
     import { loadLib } from './use-lib.js';
-    const { registerProtocolFromIcons, SpriteBuilder } = await loadLib();
+    const { registerSpriteFromIcons, buildSprite } = await loadLib();
 
     // Two simple icons (loaded from local files)
     const markerSvg = await fetch('./data/marker.svg').then(r => r.text());
@@ -47,18 +47,12 @@
 
     // Build 1x & 2x and register protocol "sprite://pack"
     // IMPORTANT: Register the protocol BEFORE creating the map
-    const unregister = await registerProtocolFromIcons(window.maplibregl, 'sprite', 'pack', icons);
+    const unregister = await registerSpriteFromIcons(window.maplibregl, 'sprite', 'pack', icons);
 
-    // DEBUG: also build preview object URLs so you can click/open the generated sprites
-    const makePreview = async (ratio) => {
-      const sb = new SpriteBuilder({ pixelRatio: ratio });
-      icons.forEach(({ id, svg }) => sb.addSvg(id, svg));
-      const spriteURL = await sb.exportSpriteURL();
-      const jsonURL = await sb.exportJSONURL();
-      return { sb, spriteURL, jsonURL };
-    };
-    const p1 = await makePreview(1);
-    const p2 = await makePreview(2);
+    // DEBUG: also build preview object URLs (using buildSprite alias)
+    const toRecord = Object.fromEntries(icons.map(({ id, svg }) => [id, svg]));
+    const p1 = await buildSprite({ imgs: toRecord, pixelRatio: 1 });
+    const p2 = await buildSprite({ imgs: toRecord, pixelRatio: 2 });
     const previewLinks = document.getElementById('preview-links');
     previewLinks.innerHTML = `
       <strong>Sprite preview:</strong>
@@ -108,8 +102,8 @@
     // Cleanup protocol and preview URLs when the map is removed
     map.on('remove', () => {
       unregister();
-      p1.sb.expire(p1.spriteURL); p1.sb.expire(p1.jsonURL);
-      p2.sb.expire(p2.spriteURL); p2.sb.expire(p2.jsonURL);
+      try { URL.revokeObjectURL(p1.spriteURL); URL.revokeObjectURL(p1.jsonURL); } catch {}
+      try { URL.revokeObjectURL(p2.spriteURL); URL.revokeObjectURL(p2.jsonURL); } catch {}
     });
   </script>
 </body>

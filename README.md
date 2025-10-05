@@ -2,9 +2,21 @@
 
 Browser-only sprite packer for SVGs. Render a PNG sprite via Canvas, export a matching JSON layout, and plug directly into MapLibre — either by hosting files or using an in-memory custom protocol (no server required).
 
-👉 **Live demos:** https://opendataland.github.io/maplibre-gl-svg-sprite/
+👉 Hosted docs & demos: https://opendataland.github.io/maplibre-gl-svg-sprite/
+   • API reference: https://opendataland.github.io/maplibre-gl-svg-sprite/api/
 
 Note: This project is inspired by the original spritezero work by the Mapbox team and the wider open-source community. Huge thanks for blazing the trail — this is a lean, browser-native take on that idea for MapLibre workflows.
+
+### Choose Your Path
+
+- Fastest sprite setup (no server): `registerSpriteFromIcons(maplibregl, 'sprite', 'pack', icons)` then set `style.sprite = 'sprite://pack'`.
+- Parameterized, on‑demand icons: `registerSVGProtocol(maplibregl, 'svg', icons)` then use `buildSvgUrl({ icon: 'id', ... })`.
+- Auto‑generate when missing: `registerStyleImageMissingHandler(map, { svgIcons, postprocessCanvas })`.
+
+Ergonomics:
+- Accepts icons as array or record in helpers: `[{ id, svg }]` or `{ id: svg }`.
+- Aliases: `buildSprite(...)` for `generateBrowserSprite(...)`, `registerSpriteFromIcons(...)` for `registerProtocolFromIcons(...)`.
+- Defaults: `registerSVGProtocol` uses `window.devicePixelRatio` when `pixelRatio` is not provided.
 
 ### Why this exists
 
@@ -64,6 +76,9 @@ const { spriteURL, jsonURL, json, canvas } = await generateBrowserSprite({
   imgs: [ { id: 'a', svg: '<svg .../>' }, { id: 'b', svg: '<svg .../>' } ],
   pixelRatio: 1
 });
+
+// The helper also accepts a record of icons:
+// const { spriteURL, jsonURL } = await buildSprite({ imgs: { a: '<svg.../>', b: '<svg.../>' }, pixelRatio: 2 });
 ```
 
 ### Demo
@@ -96,7 +111,7 @@ Two custom protocols help you integrate sprites and raw SVG icons without hostin
 
 - `sprite://<key>`
   - What: In‑memory MapLibre sprite (pairs of PNG + JSON, plus @2x).
-  - Register: `SpriteBuilder.registerMapLibreProtocol(maplibre, 'sprite', registry, { oneShot?, ttlMs? })` or use `registerProtocolFromIcons(...)` to build the registry for you.
+  - Register: `SpriteBuilder.registerMapLibreProtocol(maplibre, 'sprite', registry, { oneShot?, ttlMs? })` or use `registerProtocolFromIcons(...)` / `registerSpriteFromIcons(...)` to build the registry for you.
   - Use: set `style.sprite = 'sprite://<key>'` in your style; MapLibre will fetch `sprite.png/.json` and `sprite@2x.png/.json` via the protocol.
   - When: You want standard MapLibre sprite behavior without a server. Great for shipped styles or self‑contained demos.
   - Lifecycle: `oneShot` frees a ratio after first (json+png) serve; `ttlMs` evicts after a timeout. Keep the registry object around as long as the map/style might request it.
@@ -104,6 +119,7 @@ Two custom protocols help you integrate sprites and raw SVG icons without hostin
 - `svg://<id>?params`
   - What: On‑the‑fly conversion of a single SVG (by id) into a PNG buffer with parameters.
   - Register: `registerSVGProtocol(maplibre, 'svg', icons, { postprocessCanvas })` where `icons` is a map `{ id: svgMarkup }` (generated or hand‑built) and `postprocessCanvas` can be an op or `ops.chain(...)`.
+  - Default DPR: if `pixelRatio` is omitted, the protocol uses `window.devicePixelRatio`.
   - Use: `map.loadImage('svg://marker?width=32&height=32&fg=%23ff3366&pixelRatio=2', cb)` or pass such URLs into sources that MapLibre will load.
   - Common params (any others are forwarded to `postprocessCanvas`):
     - `width`, `height`: CSS pixels of the target image
@@ -127,24 +143,20 @@ Notes
 
 ### Docs & Examples
 
-Build the HTML docs and demo bundle with:
+- Browse hosted docs: https://opendataland.github.io/maplibre-gl-svg-sprite/
+- API reference: https://opendataland.github.io/maplibre-gl-svg-sprite/api/
 
-```bash
-npm run build-gh-pages
-```
-
-The command wipes `docs/`, runs the TypeScript build, generates the TypeDoc HTML reference in `docs/api/`, copies the compiled `dist/` bundle and everything under `examples/`, and writes `docs/index.html` that links to the API docs and each example. The `docs/` directory is ignored on `main`; run `npm run deploy` to publish the generated site to `gh-pages`.
-
-To regenerate just the API reference you can still run:
-
-```bash
-npm run docs
-# output: docs/api/index.html
-```
+Local build (optional):
+- `npm run build-gh-pages` creates the `docs/` folder locally for preview. Note: `docs/` is gitignored on `main` and only published to the `gh-pages` branch via `npm run deploy`.
+- `npm run docs` regenerates TypeDoc output into `docs/api/` for local viewing.
 
 Author API docs using JSDoc comments in the source. Only exported members from `src/index.ts` are included; mark internals with `@internal` to exclude.
 
 ### API
+Ergonomic additions:
+- `buildSprite({ imgs, pixelRatio })` – alias of `generateBrowserSprite` (also accepts an icon record).
+- `registerSpriteFromIcons(maplibregl, protocol, key, icons, ratios?, options?)` – alias of `registerProtocolFromIcons`.
+- `SpriteBuilder.addSvgs(recordOrArray)` and `addSvgIfAbsent(id, svg)`.
 
 ### Testing
 
@@ -262,6 +274,20 @@ new maplibregl.Map({ container: 'map', style });
 - Memory: call `destroy()` or revoke URLs if you generate often.
 - Layout: current packer is horizontal. If you need tighter packing, we can wire in a bin packer.
 - SVG recolor markers: when using `data-fg` / `data-bg` on SVG elements for recoloring, make sure the attributes are XML‑friendly, e.g. `data-fg="true"` (not just `data-fg`). The library will rewrite colors, and it also normalizes boolean data attributes for robust XML parsing.
+
+### Troubleshooting
+- Error: “Expected MapLibre module with addProtocol/removeProtocol”
+  - Pass the MapLibre module (e.g., `import maplibregl from 'maplibre-gl'`) to `registerSpriteFromIcons` / `registerSVGProtocol`, not the map instance.
+- Icons look soft on Retina
+  - Build/register both 1x and 2x ratios for sprites, or set `pixelRatio=2` in `svg://` URLs; the `svg://` protocol defaults to `window.devicePixelRatio` if omitted.
+- `svg://` size isn’t what I expect
+  - Specify `width`/`height` in the URL or ensure the SVG has `width/height` or a `viewBox` to derive dimensions.
+- Recolor params don’t change the icon
+  - Use `fg`/`bg` on elements marked with `data-fg`/`data-bg`, or use `color` to set a root `<svg fill="...">` fallback. Ensure data attributes include values (e.g., `data-fg="true"`).
+- Duplicate icon IDs
+  - `SpriteBuilder.addSvg` logs a warning; use `addSvgIfAbsent` or unique IDs to avoid accidental overrides.
+- Sprite key not found
+  - Verify your style `sprite` matches the registered key; the error lists available keys when debug info is enabled.
 
 ### Advanced: On‑the‑fly SVG images (svg://)
 

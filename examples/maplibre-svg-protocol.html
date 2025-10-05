@@ -12,7 +12,7 @@
       position: absolute;
       top: 12px;
       left: 12px;
-      max-width: 340px;
+      max-width: 360px;
       background: rgba(255,255,255,0.94);
       padding: 12px 16px;
       border-radius: 8px;
@@ -48,14 +48,14 @@
   <div id="map"></div>
   <details class="info" open>
     <summary>svg:// protocol with params</summary>
-    <p>SVG markup stays in memory – query parameters tweak colors, size, pixel ratio, and optional overlay text.</p>
+    <p>Icons are rendered in memory. Query parameters tweak color, size, pixel ratio, and optional overlay text for airport codes.</p>
     <ul id="svg-examples"></ul>
   </details>
 
   <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
   <script type="module">
     import { loadLib } from './use-lib.js';
-    const { registerSVGProtocol, ops } = await loadLib();
+    const { registerSVGProtocol, ops, buildSvgUrl } = await loadLib();
 
     const icons = {
       marker: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#3FB1CE"/><circle cx="12" cy="12" r="5" fill="#fff"/></svg>',
@@ -82,9 +82,11 @@
           data: {
             type: 'FeatureCollection',
             features: [
-              { type: 'Feature', properties: { icon: 'hot' }, geometry: { type: 'Point', coordinates: [-122.4194, 37.7749] } },
-              { type: 'Feature', properties: { icon: 'cool' }, geometry: { type: 'Point', coordinates: [-122.41, 37.78] } },
-              { type: 'Feature', properties: { icon: 'labeled' }, geometry: { type: 'Point', coordinates: [-122.405, 37.769] } }
+              { type: 'Feature', properties: { icon: 'hot' }, geometry: { type: 'Point', coordinates: [-74.0060, 40.7060] } },
+              { type: 'Feature', properties: { icon: 'cool' }, geometry: { type: 'Point', coordinates: [-73.9855, 40.7580] } },
+              { type: 'Feature', properties: { icon: 'jfk' }, geometry: { type: 'Point', coordinates: [-73.7781, 40.6413] } },
+              { type: 'Feature', properties: { icon: 'lga' }, geometry: { type: 'Point', coordinates: [-73.8740, 40.7769] } },
+              { type: 'Feature', properties: { icon: 'ewr' }, geometry: { type: 'Point', coordinates: [-74.1745, 40.6895] } }
             ]
           }
         }
@@ -104,24 +106,86 @@
       ]
     };
 
-    const map = new window.maplibregl.Map({ container: 'map', style, center: [-122.4194, 37.7749], zoom: 11 });
+    const map = new window.maplibregl.Map({
+      container: 'map',
+      style,
+      center: [-73.93, 40.72],
+      zoom: 10
+    });
 
     map.once('load', async () => {
+      // Using type-safe URL builder instead of manual query strings!
       const variants = [
         {
           id: 'hot',
-          url: 'svg://marker?fg=%23ff3366&bg=%23003366&width=36&height=36&pixelRatio=2',
-          description: 'Recolor marker + scale for HiDPI'
+          url: buildSvgUrl({
+            icon: 'marker',
+            fg: '#ff3366',
+            bg: '#003366',
+            width: 36,
+            height: 36,
+            pixelRatio: 2
+          }),
+          description: 'Downtown marker with recolored fg/bg (using buildSvgUrl)'
         },
         {
           id: 'cool',
-          url: 'svg://star?fg=%23f2c94c&width=28&height=28',
-          description: 'Gold star with custom size'
+          url: buildSvgUrl({
+            icon: 'star',
+            fg: '#f2c94c',
+            width: 32,
+            height: 32,
+            pixelRatio: 2
+          }),
+          description: 'Midtown star marker resized for HiDPI (using buildSvgUrl)'
         },
         {
-          id: 'labeled',
-          url: 'svg://marker?fg=%233fb1ce&bg=%23003366&width=40&height=40&text=LB&fontSize=18&textColor=%23ffffff',
-          description: 'Overlay text via ops.overlayText()'
+          id: 'jfk',
+          url: buildSvgUrl({
+            icon: 'marker',
+            width: 44,
+            height: 44,
+            pixelRatio: 2,
+            bg: '#ffffff',
+            fg: '#00499c',
+            text: 'JFK',
+            fontSize: 18,
+            textColor: '#00499c',
+            textStrokeWidth: 0
+          }),
+          description: 'Overlay text marker for JFK (using buildSvgUrl)'
+        },
+        {
+          id: 'lga',
+          url: buildSvgUrl({
+            icon: 'marker',
+            width: 44,
+            height: 44,
+            pixelRatio: 2,
+            bg: '#ffffff',
+            fg: '#008a3b',
+            text: 'LGA',
+            fontSize: 18,
+            textColor: '#008a3b',
+            textStrokeWidth: 0
+          }),
+          description: 'Overlay text marker for LGA (using buildSvgUrl)'
+        },
+        {
+          id: 'ewr',
+          url: buildSvgUrl({
+            icon: 'marker',
+            width: 44,
+            height: 44,
+            pixelRatio: 2,
+            bg: '#ffffff',
+            fg: '#d35400',
+            text: 'EWR',
+            fontSize: 8,
+            textColor: '#d35400',
+            textStrokeWidth: 0
+          }),
+          description: 'Overlay text marker for EWR (using buildSvgUrl)'
         }
       ];
 

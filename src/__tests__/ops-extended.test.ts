@@ -46,7 +46,14 @@ describe('ops - extended tests', () => {
         width: 24,
         height: 24
       }),
-      putImageData: vi.fn()
+      putImageData: vi.fn(),
+      measureText: vi.fn().mockReturnValue({
+        width: 50,
+        actualBoundingBoxLeft: 0,
+        actualBoundingBoxRight: 50,
+        actualBoundingBoxAscent: 12,
+        actualBoundingBoxDescent: 3
+      })
     };
   });
 
@@ -74,8 +81,9 @@ describe('ops - extended tests', () => {
       const op = new OverlayText();
       await op.run(mockContext, 64, 64, { text: 'Hello' });
 
-      expect(mockContext.fillText).toHaveBeenCalledWith('Hello', 32, 32);
-      expect(mockContext.strokeText).toHaveBeenCalledWith('Hello', 32, 32);
+      // Y = H/2 + (ascent - descent)/2 = 32 + (12-3)/2 = 36.5
+      expect(mockContext.fillText).toHaveBeenCalledWith('Hello', 32, 36.5);
+      expect(mockContext.strokeText).toHaveBeenCalledWith('Hello', 32, 36.5);
     });
 
     it('should handle text parameter variations', async () => {
@@ -83,7 +91,7 @@ describe('ops - extended tests', () => {
 
       // Test with 'label' parameter
       await op.run(mockContext, 64, 64, { label: 'Test Label' });
-      expect(mockContext.fillText).toHaveBeenCalledWith('Test Label', 32, 32);
+      expect(mockContext.fillText).toHaveBeenCalledWith('Test Label', 32, 36.5);
     });
 
     it('should apply custom font settings', async () => {
@@ -147,7 +155,8 @@ describe('ops - extended tests', () => {
         ty: '5'
       });
 
-      expect(mockContext.fillText).toHaveBeenCalledWith('Hello', 42, 37);
+      // X = 32 + 10 = 42, Y = 32 + 5 + (12-3)/2 = 41.5
+      expect(mockContext.fillText).toHaveBeenCalledWith('Hello', 42, 41.5);
     });
   });
 

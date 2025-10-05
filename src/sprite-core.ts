@@ -79,11 +79,21 @@ export interface ProtocolOptions {
  * @returns Promise resolving to sprite result with URLs and canvas
  * @throws {Error} If parameters are invalid
  */
-export async function generateBrowserSprite({ imgs, pixelRatio = 1 }: { imgs: SvgInput[]; pixelRatio?: number }): Promise<SpriteResult> {
-  if (!Array.isArray(imgs) || typeof pixelRatio !== 'number') {
+function normalizeIcons(icons: SvgInput[] | Record<string, string>): SvgInput[] {
+  if (Array.isArray(icons)) return icons;
+  if (icons && typeof icons === 'object') {
+    return Object.entries(icons).map(([id, svg]) => ({ id, svg }));
+  }
+  return [];
+}
+
+export async function generateBrowserSprite({ imgs, pixelRatio = 1 }: { imgs: SvgInput[] | Record<string, string>; pixelRatio?: number }): Promise<SpriteResult> {
+  if ((Array.isArray(imgs) || (imgs && typeof imgs === 'object')) === false || typeof pixelRatio !== 'number') {
+    // Keep legacy error message for compatibility/tests
     throw new Error('Expected { imgs: Array<{id, svg}>, pixelRatio: number }');
   }
-  const prepared = await Promise.all(imgs.map(async ({ id, svg }) => {
+  const list = normalizeIcons(imgs);
+  const prepared = await Promise.all(list.map(async ({ id, svg }) => {
     const { bitmap, width, height } = await svgToBitmap(svg, pixelRatio);
     return { id, bitmap, width, height };
   }));
@@ -132,7 +142,20 @@ export class SpriteBuilder {
   setPixelRatio(ratio: number) { if (!(typeof ratio === 'number' && isFinite(ratio) && ratio > 0)) throw new Error('pixelRatio must be a positive number'); this._pixelRatio = ratio; this._markDirty(); }
 
   /** Add an SVG icon to the sprite */
-  addSvg(id: string, svg: string) { if (!id || typeof id !== 'string') throw new Error('addSvg requires a string id'); if (typeof svg !== 'string') throw new Error('addSvg requires svg string content'); this._items.push({ id, svg }); this._markDirty(); }
+  addSvg(id: string, svg: string) {
+    if (!id || typeof id !== 'string') throw new Error('addSvg requires a string id');
+    if (typeof svg !== 'string') throw new Error('addSvg requires svg string content');
+    if (this._items.some(it => it.id === id)) {
+      try { console.warn(`[SpriteBuilder] duplicate id '${id}' added; last definition wins in JSON.`); } catch {}
+    }
+    this._items.push({ id, svg }); this._markDirty();
+  }
+
+  /** Add multiple SVG icons at once (array or record) */
+  addSvgs(icons: SvgInput[] | Record<string, string>) { for (const { id, svg } of normalizeIcons(icons)) this.addSvg(id, svg); }
+
+  /** Add an SVG icon only if not already present */
+  addSvgIfAbsent(id: string, svg: string): boolean { if (this._items.some(it => it.id === id)) return false; this.addSvg(id, svg); return true; }
 
   /** Export sprite sheet as object URL */
   async exportSpriteURL(): Promise<string> { const built = await this._ensureBuilt(); if (this._urls.sprite) URL.revokeObjectURL(this._urls.sprite); const blob = await canvasToBlob(built.canvas, 'image/png'); this._urls.sprite = URL.createObjectURL(blob); return this._urls.sprite; }
@@ -142,6 +165,13 @@ export class SpriteBuilder {
 
   /** Export both sprite and JSON URLs */
   async exportURLs(): Promise<{ sprite: string; json: string }> { const [sprite, json] = await Promise.all([ this.exportSpriteURL(), this.exportJSONURL() ]); return { sprite, json }; }
+
+  /** Export URLs along with layout size */
+  async exportBundle(): Promise<{ sprite: string; json: string; width: number; height: number }> {
+    const built = await this._ensureBuilt();
+    const { sprite, json } = await this.exportURLs();
+    return { sprite, json, width: built.width, height: built.height };
+  }
 
   /** Export JSON metadata object */
   async exportJSON(): Promise<SpriteJSON> { const built = await this._ensureBuilt(); return built.json; }
@@ -176,7 +206,7 @@ export class SpriteBuilder {
     options: ProtocolOptions = {}
   ): () => void {
     if (!maplibre || typeof (maplibre as any).addProtocol !== 'function' || typeof (maplibre as any).removeProtocol !== 'function') {
-      throw new Error('Expected MapLibre module with addProtocol/removeProtocol');
+      throw new Error('Expected MapLibre module with addProtocol/removeProtocol (pass the maplibre-gl module, not a map instance).');
     }
     const served: Record<string, { [ratio: number]: { png: boolean; json: boolean } }> = {};
     const timers: Record<string, { [ratio: number]: any }> = {};
@@ -223,7 +253,11 @@ export class SpriteBuilder {
         // Normalize odd forms like "pack/" or "/pack" just in case the caller joined paths
         const decodedKey = decodeURIComponent(key).replace(/^\/+/, '').replace(/\/+$/, '');
         const entry = registry[decodedKey];
-        if (!entry) return fail(new Error('Sprite key not found: ' + decodedKey)) as any;
+        if (!entry) {
+          const keys = Object.keys(registry || {});
+          const hint = keys.length ? ` (available: ${keys.slice(0, 8).join(', ')}${keys.length > 8 ? ', …' : ''})` : '';
+          return fail(new Error('Sprite key not found: ' + decodedKey + hint)) as any;
+        }
         const assets = (ratio === 2 && entry[2]) ? entry[2]! : entry[1];
         if (!assets) return fail(new Error('Sprite assets missing for ratio ' + ratio)) as any;
         const usingCallback = typeof callback === 'function';
@@ -271,11 +305,12 @@ export class SpriteBuilder {
  */
 export async function buildSpriteRegistryFromIcons(
   key: string,
-  icons: SvgInput[],
+  icons: SvgInput[] | Record<string, string>,
   ratios: number[] = [1, 2]
 ): Promise<ProtocolRegistry> {
   const byRatio: { [ratio: number]: SpriteAssets } = {} as any;
-  for (const r of ratios) { const sb = new SpriteBuilder({ pixelRatio: r }); icons.forEach(({ id, svg }) => sb.addSvg(id, svg)); byRatio[r] = await sb.exportAssets(); }
+  const list = normalizeIcons(icons);
+  for (const r of ratios) { const sb = new SpriteBuilder({ pixelRatio: r }); list.forEach(({ id, svg }) => sb.addSvg(id, svg)); byRatio[r] = await sb.exportAssets(); }
   const entry: any = {}; for (const r of ratios) entry[r] = byRatio[r];
   return { [key]: entry } as ProtocolRegistry;
 }
@@ -295,13 +330,16 @@ export async function registerProtocolFromIcons(
   maplibre: MapLibreLike,
   protocol: string,
   key: string,
-  icons: SvgInput[],
+  icons: SvgInput[] | Record<string, string>,
   ratios: number[] = [1, 2],
   options: ProtocolOptions = {}
 ): Promise<() => void> {
   const registry = await buildSpriteRegistryFromIcons(key, icons, ratios);
   return SpriteBuilder.registerMapLibreProtocol(maplibre, protocol, registry, options);
 }
+
+/** Convenience alias for registerProtocolFromIcons */
+export const registerSpriteFromIcons = registerProtocolFromIcons;
 
 /**
  * Register a one-shot sprite protocol (sprites served once then removed)
@@ -318,7 +356,7 @@ export async function registerOneShotSpriteFromIcons(
   maplibre: MapLibreLike,
   protocol: string,
   key: string,
-  icons: SvgInput[],
+  icons: SvgInput[] | Record<string, string>,
   ratios: number[] = [1, 2],
   ttlMs?: number
 ): Promise<() => void> {
@@ -343,7 +381,7 @@ export function registerSVGProtocol(
   options: SVGProtocolOptions = {}
 ): () => void {
   if (!maplibre || typeof (maplibre as any).addProtocol !== 'function' || typeof (maplibre as any).removeProtocol !== 'function') {
-    throw new Error('Expected MapLibre module with addProtocol/removeProtocol');
+    throw new Error('Expected MapLibre module with addProtocol/removeProtocol (pass the maplibre-gl module, not a map instance).');
   }
   const handler = async (
     requestParams: { url: string },
@@ -374,7 +412,7 @@ export function registerSVGProtocol(
       const original = icons[id];
       if (!original) return fail(new Error('SVG not found: ' + id));
       const svg = applySvgParams(original, params);
-      const pixelRatio = Number(params.pixelRatio) || 1;
+      const pixelRatio = Number(params.pixelRatio) || (typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1);
       const { bitmap, width, height } = await svgToBitmap(svg, pixelRatio);
       let canvas: HTMLCanvasElement | OffscreenCanvas;
       if (typeof document === 'undefined') {
@@ -392,7 +430,15 @@ export function registerSVGProtocol(
       const cssWidth = params.width ? Number(params.width) : width / pixelRatio;
       const cssHeight = params.height ? Number(params.height) : height / pixelRatio;
       if (options.postprocessCanvas) {
+        // Scale context so postprocess can work in CSS pixels
+        if (pixelRatio !== 1) {
+          ctx.save();
+          ctx.scale(pixelRatio, pixelRatio);
+        }
         await options.postprocessCanvas(ctx as CanvasRenderingContext2D, cssWidth, cssHeight, params);
+        if (pixelRatio !== 1) {
+          ctx.restore();
+        }
       }
       const blob = await canvasLikeToBlob(canvas, 'image/png');
       const buf = await blob.arrayBuffer();

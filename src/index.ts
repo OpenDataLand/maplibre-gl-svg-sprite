@@ -1,8 +1,12 @@
 export {
   generateBrowserSprite,
+  // Aliases for ergonomics
+  generateBrowserSprite as buildSprite,
   SpriteBuilder,
   buildSpriteRegistryFromIcons,
   registerProtocolFromIcons,
+  // Alias for ergonomics
+  registerProtocolFromIcons as registerSpriteFromIcons,
   registerSVGProtocol,
   registerOneShotSpriteFromIcons,
 } from './sprite-core.js';
@@ -18,3 +22,13 @@ export * as ops from './ops/index.js';
 export type { MapLibreLike, MapLike } from './types/maplibre-like.js';
 export { createAnimatedSvgImage } from './utils/animated-svg.js';
 export type { AnimatedSvgOptions } from './utils/animated-svg.js';
+export { buildSvgUrl, svgUrl, SvgUrlBuilder } from './utils/url-builder.js';
+export type {
+  BaseSvgParams,
+  SvgColorParams,
+  SpriteTintParams,
+  OverlayTextParams,
+  OverlaySvgParams,
+  OverlayGridParams,
+  SvgUrlParams,
+} from './utils/url-builder.js';

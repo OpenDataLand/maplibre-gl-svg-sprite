@@ -27,7 +27,14 @@ global.document.createElement = vi.fn().mockReturnValue({
     font: '',
     textAlign: 'center',
     textBaseline: 'middle',
-    globalCompositeOperation: 'source-over'
+    globalCompositeOperation: 'source-over',
+    measureText: vi.fn().mockReturnValue({
+      width: 50,
+      actualBoundingBoxLeft: 0,
+      actualBoundingBoxRight: 50,
+      actualBoundingBoxAscent: 12,
+      actualBoundingBoxDescent: 3
+    })
   })
 });
 
@@ -80,7 +87,14 @@ describe('Integration Tests', () => {
         strokeStyle: '#000',
         font: 'normal 14px Arial',
         textAlign: 'center',
-        textBaseline: 'middle'
+        textBaseline: 'middle',
+        measureText: vi.fn().mockReturnValue({
+          width: 50,
+          actualBoundingBoxLeft: 0,
+          actualBoundingBoxRight: 50,
+          actualBoundingBoxAscent: 12,
+          actualBoundingBoxDescent: 3
+        })
       };
 
       expect(() => chained(mockContext as any, 64, 64, { color: 'red', text: 'Hello' }))
