@@ -317,7 +317,7 @@
           <div class="example-icon">🚀</div>
           <div class="example-content">
             <div class="example-title">Quickstart Demo</div>
-            <div class="example-desc">Interactive demo with <code>registerProtocolFromIcons()</code> in 3 lines</div>
+            <div class="example-desc">Interactive demo with <code>registerSpriteFromIcons()</code> in 3 lines</div>
           </div>
         </a>
 
@@ -375,7 +375,7 @@
           <div class="code-dot"></div>
           <div class="code-dot"></div>
         </div>
-        <pre><code><span class="k">import</span> { registerProtocolFromIcons } <span class="k">from</span> <span class="s">'maplibre-gl-svg-sprite'</span>;
+        <pre><code><span class="k">import</span> { registerSpriteFromIcons } <span class="k">from</span> <span class="s">'maplibre-gl-svg-sprite'</span>;
 
 <span class="c">// Your SVG icons</span>
 <span class="k">const</span> icons = [
@@ -384,7 +384,7 @@
 ];
 
 <span class="c">// Register sprite protocol</span>
-<span class="k">await</span> <span class="f">registerProtocolFromIcons</span>(maplibregl, <span class="s">'sprite'</span>, <span class="s">'my-icons'</span>, icons);
+<span class="k">await</span> <span class="f">registerSpriteFromIcons</span>(maplibregl, <span class="s">'sprite'</span>, <span class="s">'my-icons'</span>, icons);
 
 <span class="c">// Use in your style</span>
 <span class="k">const</span> map = <span class="k">new</span> maplibregl.Map({
@@ -394,6 +394,10 @@
     <span class="c">// ...</span>
   }
 });</code></pre>
+        <p style="margin:12px 0 0; color:#94a3b8;">
+          Tip: For a quick sprite preview without <code>SpriteBuilder</code>, see
+          <code>buildSprite</code> in the <a href="maplibre-quickstart.html">Quickstart</a> page.
+        </p>
       </div>
     </div>
   </div>

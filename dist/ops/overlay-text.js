@@ -34,25 +34,57 @@ export class OverlayText extends BaseOp {
         const anchor = (params.textAnchor || params.anchor || 'center').toLowerCase();
         const ox = params.tx ? Number(params.tx) : 0;
         const oy = params.ty ? Number(params.ty) : 0;
+        // Note: fontSize is in CSS pixels. The canvas context may already be scaled by pixelRatio,
+        // so we use the fontSize directly - the browser will handle the scaling.
         await ensureFontLoaded(fontFamily, fontSize, fontWeight, fontStyle, params.fontLoadTimeout ? Number(params.fontLoadTimeout) : 1500);
         ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
-        ctx.textBaseline = 'middle';
-        if (anchor.includes('left'))
+        ctx.textBaseline = 'alphabetic';
+        // Set text alignment based on anchor
+        if (anchor.includes('left')) {
             ctx.textAlign = 'left';
-        else if (anchor.includes('right'))
+        }
+        else if (anchor.includes('right')) {
             ctx.textAlign = 'right';
-        else
+        }
+        else {
             ctx.textAlign = 'center';
-        const x = (ctx.textAlign === 'left') ? padding + ox : (ctx.textAlign === 'right') ? W - padding + ox : W / 2 + ox;
-        const y = (anchor.includes('top')) ? padding + oy : (anchor.includes('bottom')) ? H - padding + oy : H / 2 + oy;
+        }
+        const metrics = ctx.measureText(text);
+        const ascent = Number.isFinite(metrics === null || metrics === void 0 ? void 0 : metrics.actualBoundingBoxAscent) ? metrics.actualBoundingBoxAscent : fontSize * 0.75;
+        const descent = Number.isFinite(metrics === null || metrics === void 0 ? void 0 : metrics.actualBoundingBoxDescent) ? metrics.actualBoundingBoxDescent : fontSize * 0.25;
+        // Calculate X position
+        let x;
+        if (anchor.includes('left')) {
+            x = padding + ox;
+        }
+        else if (anchor.includes('right')) {
+            x = W - padding + ox;
+        }
+        else {
+            x = W / 2 + ox;
+        }
+        // Calculate Y position (baseline)
+        let y;
+        if (anchor.includes('top')) {
+            y = padding + ascent + oy;
+        }
+        else if (anchor.includes('bottom')) {
+            y = H - padding - descent + oy;
+        }
+        else {
+            // Center vertically: middle of canvas + half the visual height adjustment
+            y = H / 2 + (ascent - descent) / 2 + oy;
+        }
+        const drawX = x;
+        const drawY = y;
         if (strokeWidth > 0) {
             ctx.lineJoin = 'round';
             ctx.lineWidth = strokeWidth;
             ctx.strokeStyle = stroke;
-            ctx.strokeText(text, x, y);
+            ctx.strokeText(text, drawX, drawY);
         }
         ctx.fillStyle = fill;
-        ctx.fillText(text, x, y);
+        ctx.fillText(text, drawX, drawY);
     }
 }
 /**

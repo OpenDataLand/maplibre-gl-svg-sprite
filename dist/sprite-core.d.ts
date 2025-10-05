@@ -63,17 +63,8 @@ export interface ProtocolOptions {
     /** Log requests and responses for debugging */
     debug?: boolean;
 }
-/**
- * Generate a sprite sheet from SVG icons for browser usage
- *
- * @param params - Configuration object
- * @param params.imgs - Array of SVG icons
- * @param params.pixelRatio - Pixel ratio for rendering (default: 1)
- * @returns Promise resolving to sprite result with URLs and canvas
- * @throws {Error} If parameters are invalid
- */
 export declare function generateBrowserSprite({ imgs, pixelRatio }: {
-    imgs: SvgInput[];
+    imgs: SvgInput[] | Record<string, string>;
     pixelRatio?: number;
 }): Promise<SpriteResult>;
 /**
@@ -106,6 +97,10 @@ export declare class SpriteBuilder {
     setPixelRatio(ratio: number): void;
     /** Add an SVG icon to the sprite */
     addSvg(id: string, svg: string): void;
+    /** Add multiple SVG icons at once (array or record) */
+    addSvgs(icons: SvgInput[] | Record<string, string>): void;
+    /** Add an SVG icon only if not already present */
+    addSvgIfAbsent(id: string, svg: string): boolean;
     /** Export sprite sheet as object URL */
     exportSpriteURL(): Promise<string>;
     /** Export JSON metadata as object URL */
@@ -114,6 +109,13 @@ export declare class SpriteBuilder {
     exportURLs(): Promise<{
         sprite: string;
         json: string;
+    }>;
+    /** Export URLs along with layout size */
+    exportBundle(): Promise<{
+        sprite: string;
+        json: string;
+        width: number;
+        height: number;
     }>;
     /** Export JSON metadata object */
     exportJSON(): Promise<SpriteJSON>;
@@ -149,7 +151,7 @@ export declare class SpriteBuilder {
  * @param ratios - Pixel ratios to generate (default: [1, 2])
  * @returns Promise resolving to protocol registry
  */
-export declare function buildSpriteRegistryFromIcons(key: string, icons: SvgInput[], ratios?: number[]): Promise<ProtocolRegistry>;
+export declare function buildSpriteRegistryFromIcons(key: string, icons: SvgInput[] | Record<string, string>, ratios?: number[]): Promise<ProtocolRegistry>;
 /**
  * Build and register a protocol directly from icons
  *
@@ -161,7 +163,9 @@ export declare function buildSpriteRegistryFromIcons(key: string, icons: SvgInpu
  * @param options - Protocol options
  * @returns Promise resolving to unregister function
  */
-export declare function registerProtocolFromIcons(maplibre: MapLibreLike, protocol: string, key: string, icons: SvgInput[], ratios?: number[], options?: ProtocolOptions): Promise<() => void>;
+export declare function registerProtocolFromIcons(maplibre: MapLibreLike, protocol: string, key: string, icons: SvgInput[] | Record<string, string>, ratios?: number[], options?: ProtocolOptions): Promise<() => void>;
+/** Convenience alias for registerProtocolFromIcons */
+export declare const registerSpriteFromIcons: typeof registerProtocolFromIcons;
 /**
  * Register a one-shot sprite protocol (sprites served once then removed)
  *
@@ -173,7 +177,7 @@ export declare function registerProtocolFromIcons(maplibre: MapLibreLike, protoc
  * @param ttlMs - Optional TTL in milliseconds
  * @returns Promise resolving to unregister function
  */
-export declare function registerOneShotSpriteFromIcons(maplibre: MapLibreLike, protocol: string, key: string, icons: SvgInput[], ratios?: number[], ttlMs?: number): Promise<() => void>;
+export declare function registerOneShotSpriteFromIcons(maplibre: MapLibreLike, protocol: string, key: string, icons: SvgInput[] | Record<string, string>, ratios?: number[], ttlMs?: number): Promise<() => void>;
 /**
  * Register an SVG protocol for on-the-fly parameterized icon rendering
  *
