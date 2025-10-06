@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MapLibre manual sprite protocol</title>
-  <link href="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
+  <link href="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
   <style>
     html, body { height: 100%; margin: 0; }
     #map { position: absolute; inset: 0; }
@@ -33,6 +33,7 @@
     .info code { background: #f5f5f5; padding: 0 4px; border-radius: 4px; }
     .info ol { margin: 6px 0; padding-left: 18px; }
   </style>
+  <link rel="stylesheet" href="./panels.css" />
 </head>
 <body>
   <div id="map"></div>
@@ -57,7 +58,8 @@ await registerSpriteFromIcons(maplibregl, 'sprite', 'demo', icons, [1, 2]);
     </code></pre>
   </details>
 
-  <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
+  <script src="./collapsible.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js" defer></script>
   <script type="module">
     import { loadLib } from './use-lib.js';
     const { SpriteBuilder } = await loadLib();

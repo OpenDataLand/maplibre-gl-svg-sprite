@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Animated SVG Icons with MapLibre</title>
-  <link href="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
+  <link href="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
   <style>
     html, body { height: 100%; margin: 0; }
     #map { position: absolute; inset: 0; }
@@ -36,6 +36,7 @@
       border-radius: 4px;
     }
   </style>
+  <link rel="stylesheet" href="./panels.css" />
 </head>
 <body>
   <div id="map"></div>
@@ -49,7 +50,8 @@
     </ul>
   </details>
 
-  <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
+  <script src="./collapsible.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js" defer></script>
   <script type="module">
     import { loadLib } from './use-lib.js';
     const { createAnimatedSvgImage } = await loadLib();

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MapLibre styleimagemissing hook</title>
-  <link href="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
+  <link href="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
   <style>
     html, body { height: 100%; margin: 0; }
     #map { position: absolute; inset: 0; }
@@ -32,6 +32,7 @@
     .info summary::-webkit-details-marker { display: none; }
     .info code { background: #f5f5f5; padding: 0 4px; border-radius: 4px; }
   </style>
+  <link rel="stylesheet" href="./panels.css" />
 </head>
 <body>
   <div id="map"></div>
@@ -41,7 +42,8 @@
     <p>Try tweaking <code>?width</code>, <code>?height</code>, or <code>?fg</code> in the style definition.</p>
   </details>
 
-  <script src="https://unpkg.com/maplibre-gl@^5.7.3/dist/maplibre-gl.js"></script>
+  <script src="./collapsible.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js" defer></script>
   <script type="module">
     import { loadLib } from './use-lib.js';
     const { registerStyleImageMissingHandler } = await loadLib();

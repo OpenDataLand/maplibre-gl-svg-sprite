@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MapLibre + IIFE global (no modules)</title>
+  <link href="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { position: absolute; inset: 0; }
+  </style>
+  <link rel="stylesheet" href="./panels.css" />
+</head>
+<body>
+  <div id="map"></div>
+
+  <details class="info" open>
+    <summary>IIFE global build demo</summary>
+    <p>This example uses a prebundled script tag that exposes a global <code>MaplibreSvgSprite</code> object. No modules required.</p>
+    <ul>
+      <li>Load MapLibre from CDN</li>
+      <li>Load <code>dist/browser/maplibre-gl-svg-sprite.iife.min.js</code></li>
+      <li>Call <code>registerSpriteFromIcons</code> via the global</li>
+    </ul>
+  </details>
+
+  <!-- MapLibre GL JS -->
+  <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js" defer></script>
+  <!-- This library (global: MaplibreSvgSprite) -->
+  <script src="../dist/browser/maplibre-gl-svg-sprite.iife.min.js" defer></script>
+  <script src="./collapsible.js"></script>
+
+  <script>
+    window.addEventListener('load', async () => {
+      const { registerSpriteFromIcons } = window.MaplibreSvgSprite;
+      const maplibregl = window.maplibregl;
+
+      // Two icons from the local examples/data folder
+      const markerSvg = await fetch('./data/marker.svg').then(r => r.text());
+      const starSvg = await fetch('./data/star.svg').then(r => r.text());
+      const icons = [ { id: 'marker', svg: markerSvg }, { id: 'star', svg: starSvg } ];
+
+      // Build and register an in-memory sprite pack: sprite://demo
+      await registerSpriteFromIcons(maplibregl, 'sprite', 'demo', icons);
+
+      const map = new maplibregl.Map({
+        container: 'map',
+        style: {
+          version: 8,
+          sprite: 'sprite://demo',
+          glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+          sources: {
+            osm: {
+              type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256,
+              attribution: '&copy; OpenStreetMap contributors'
+            },
+            pts: {
+              type: 'geojson',
+              data: {
+                type: 'FeatureCollection',
+                features: [
+                  { type: 'Feature', properties: { icon: 'marker' }, geometry: { type: 'Point', coordinates: [-74.0683, 40.35] } },
+                  { type: 'Feature', properties: { icon: 'star' },   geometry: { type: 'Point', coordinates: [-74.04, 40.36] } }
+                ]
+              }
+            }
+          },
+          layers: [
+            { id: 'bg', type: 'raster', source: 'osm' },
+            { id: 'pins', type: 'symbol', source: 'pts', layout: { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true } }
+          ]
+        },
+        center: [-74.06, 40.35],
+        zoom: 13
+      });
+    });
+  </script>
+</body>
+</html>
+

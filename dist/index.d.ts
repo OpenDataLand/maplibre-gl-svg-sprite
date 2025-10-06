@@ -1,6 +1,6 @@
 export { generateBrowserSprite, generateBrowserSprite as buildSprite, SpriteBuilder, buildSpriteRegistryFromIcons, registerProtocolFromIcons, registerProtocolFromIcons as registerSpriteFromIcons, registerSVGProtocol, registerOneShotSpriteFromIcons, } from './sprite-core.js';
 export { registerStyleImageMissingHandler, } from './missing-image.js';
-export type { ProtocolOptions, SpriteResult, SpriteJSON, SpriteAssets, ProtocolRegistry } from './sprite-core.js';
+export type { ProtocolOptions, SpriteResult, SpriteJSON, SpriteAssets, ProtocolRegistry, SpriteJSONItem, SvgInput } from './sprite-core.js';
 export type { SVGProtocolOptions } from './sprite-core.js';
 export type { MissingImageHandlerOptions } from './missing-image.js';
 export * as ops from './ops/index.js';
