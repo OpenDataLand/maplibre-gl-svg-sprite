@@ -196,3 +196,36 @@ export class SvgUrlBuilder {
 export function svgUrl(icon, protocol) {
     return new SvgUrlBuilder(icon, protocol);
 }
+/**
+ * Build a type-safe named-route URL (e.g., 'airport?width=44&...')
+ */
+export function buildRouteUrl(route, params = {}) {
+    if (!route)
+        throw new Error('route parameter is required');
+    const queryString = buildQueryString(params);
+    return `${route}${queryString}`;
+}
+/** Fluent builder for named-route URLs */
+export class RouteUrlBuilder {
+    constructor(route) {
+        this.params = {};
+        this.route = route;
+    }
+    size(width, height) { this.params.width = width; this.params.height = height !== null && height !== void 0 ? height : width; return this; }
+    pixelRatio(ratio) { this.params.pixelRatio = ratio; return this; }
+    colors(opts) { if (opts.fg)
+        this.params.fg = opts.fg; if (opts.bg)
+        this.params.bg = opts.bg; if (opts.color)
+        this.params.color = opts.color; return this; }
+    tint(color) { this.params.tint = color; return this; }
+    text(content, opts) { this.params.text = content; if (opts)
+        Object.assign(this.params, opts); return this; }
+    overlay(iconId, opts) { this.params.overlay = iconId; if (opts)
+        Object.assign(this.params, opts); return this; }
+    grid(iconIds, opts) { this.params.icons = iconIds.join(','); if (opts)
+        Object.assign(this.params, opts); return this; }
+    param(key, value) { this.params[key] = value; return this; }
+    build() { return buildRouteUrl(this.route, this.params); }
+}
+/** Create a fluent builder for named-route URLs */
+export function routeUrl(route) { return new RouteUrlBuilder(route); }

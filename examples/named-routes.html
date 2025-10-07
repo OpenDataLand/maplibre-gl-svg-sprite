@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Named Routes — $text, $svg, $badge, $grid</title>
+  <link href="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { position: absolute; inset: 0; }
+  </style>
+  <link rel="stylesheet" href="./panels.css" />
+</head>
+<body>
+  <div id="map"></div>
+  <details class="info" open>
+    <summary>Named Routes demo</summary>
+    <p>Built-in routes via <code>buildDefaultNamedRoutes</code>:</p>
+    <ul>
+      <li><code>$text</code> — text-only label</li>
+      <li><code>$svg</code> — draw one SVG by id (via <code>overlay</code>)</li>
+      <li><code>$badge</code> — SVG + text (inside or stacked)</li>
+      <li><code>$grid</code> — grid of small SVGs</li>
+    </ul>
+    <p style="margin-top:6px">Examples used:</p>
+    <ul id="example-list"></ul>
+  </details>
+
+  <script src="./collapsible.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js" defer></script>
+  <script type="module">
+    import { loadLib } from './use-lib.js';
+    const { registerNamedImageHandlers, buildDefaultNamedRoutes } = await loadLib();
+
+    // Simple SVG library for demo
+    const svgIcons = {
+      marker: `<svg width="44" height="44" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" fill="#3FB1CE"/>
+        <circle cx="12" cy="12" r="5" fill="#fff"/>
+      </svg>`,
+      shield: `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <path data-bg d="M12 8h40l2 16c0 15-13 26-22 30-9-4-22-15-22-30z" fill="#0f4c81"/>
+        <path data-fg d="M14 10h36l1.5 15.5C51 38 41 46 32 50c-9-4-19-12-19.5-24.5z" fill="#ffffff"/>
+      </svg>`,
+      tree: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path data-fg d="M12 2 20 16h-5l4 6H5l4-6H4l8-14z" fill="#2e7d32" />
+      </svg>`,
+      tent: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path data-fg d="M2 20h20l-7-12-3 5-3-5z" fill="#6d4c41" />
+      </svg>`,
+      water: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path data-fg d="M3 18c3 0 3-2 6-2s3 2 6 2 3-2 6-2" fill="none" stroke="#2196f3" stroke-width="2" stroke-linecap="round"/>
+      </svg>`
+    };
+
+    // Register built-in routes
+    const routes = buildDefaultNamedRoutes(svgIcons);
+
+    // Features to showcase routes side-by-side
+    const feats = [
+      { id: '$text', coords: [-74.2, 40.85], label: 'Hello' },
+      { id: '$svg', coords: [-74.08, 40.85] },
+      { id: '$badgeInside', coords: [-73.96, 40.85], text: '95' },
+      { id: '$grid', coords: [-73.84, 40.85] }
+    ];
+
+    const list = document.getElementById('example-list');
+
+    const map = new window.maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '&copy; OpenStreetMap contributors'
+          },
+          pts: {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: feats.map(f => ({ type: 'Feature', properties: f, geometry: { type: 'Point', coordinates: f.coords } }))
+            }
+          }
+        },
+        layers: [
+          { id: 'bg', type: 'raster', source: 'osm' },
+          {
+            id: 'named-routes',
+            type: 'symbol',
+            source: 'pts',
+            layout: {
+              'icon-image': [
+                'case',
+                ['==', ['get', 'id'], '$text'],
+                ['concat', '$text?width=100&height=40&textUppercase=1&textAutoColor=1&textPadding=4&textAnchor=center&fontSize=18&textStrokeWidth=4&textBg=%233FB1CE', '&text=', ['get', 'label'] ],
+
+                ['==', ['get', 'id'], '$svg'],
+                '$svg?width=44&height=44&overlay=marker&fg=%2300a3a3',
+
+                ['==', ['get', 'id'], '$badgeInside'],
+                ['$badge?width=56&height=56&overlay=shield&ofg=%23ffffff&obg=%23003366&textAnchor=center&fontSize=22&textStrokeWidth=4&textAutoColor=1', '&text=', ['get', 'text'] ],
+
+                // default: grid
+                '$grid?width=90&height=32&icons=tree,tent,water&columns=3&gap=2&cellBg=%2300233f&cellR=6&iconPad=2&iconScale=0.85'
+              ],
+              'icon-allow-overlap': true
+            }
+          }
+        ]
+      },
+      center: [-74.0, 40.85],
+      zoom: 11
+    });
+
+    const unregister = registerNamedImageHandlers(map, routes, { debug: false });
+    map.on('remove', unregister);
+
+    // Populate examples list with the actual strings
+    const items = [
+      ['$text', '$text?width=100&height=40&text=Hello&textUppercase=1&textAutoColor=1&textPadding=4&textAnchor=center&fontSize=18&textStrokeWidth=4&textBg=%233FB1CE'],
+      ['$svg', '$svg?width=44&height=44&overlay=marker&fg=%2300a3a3'],
+      ['$badge (inside)', '$badge?width=56&height=56&overlay=shield&ofg=%23ffffff&obg=%23003366&text=95&textAnchor=center&fontSize=22&textStrokeWidth=4&textAutoColor=1'],
+      ['$grid', '$grid?width=90&height=32&icons=tree,tent,water&columns=3&gap=2&cellBg=%2300233f&cellR=6&iconPad=2&iconScale=0.85']
+    ];
+    for (const [label, code] of items) {
+      const li = document.createElement('li');
+      li.innerHTML = `${label}<br><code>${code}</code>`;
+      list.appendChild(li);
+    }
+  </script>
+</body>
+</html>
+

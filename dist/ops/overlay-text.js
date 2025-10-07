@@ -4,7 +4,8 @@ import { ensureFontLoaded } from '../utils/fonts.js';
  * Post-processing operation to overlay text on an image
  *
  * Supports query parameters: text, label, fontSize, fontWeight, fontFamily,
- * textColor, fill, textStroke, textStrokeWidth, textPadding, textAnchor, anchor, tx, ty
+ * textColor, fill, textStroke, textStrokeWidth, textPadding, textAnchor, anchor, tx, ty,
+ * textAutoColor (boolean), textUppercase (boolean)
  *
  * @example
  * ```typescript
@@ -20,14 +21,20 @@ export class OverlayText extends BaseOp {
      */
     constructor(id = 'overlayText') { super(id); }
     async run(ctx, W, H, params) {
-        const text = params.text || params.label;
+        let text = params.text || params.label;
         if (!text)
             return;
+        if (params.textUppercase === 'true' || params.textUppercase === '1') {
+            try {
+                text = String(text).toUpperCase();
+            }
+            catch { }
+        }
         const fontSize = params.fontSize ? Number(params.fontSize) : 14;
         const fontWeight = params.fontWeight || 'bold';
         const fontStyle = params.fontStyle || 'normal';
         const fontFamily = params.fontFamily || 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-        const fill = params.textColor || params.fill || '#fff';
+        let fill = params.textColor || params.fill || '';
         const stroke = params.textStroke || '#000';
         const strokeWidth = params.textStrokeWidth ? Number(params.textStrokeWidth) : 3;
         const padding = params.textPadding ? Number(params.textPadding) : 0;
@@ -77,15 +84,49 @@ export class OverlayText extends BaseOp {
         }
         const drawX = x;
         const drawY = y;
+        // Auto-contrast: derive textColor when requested and not explicitly provided
+        if (!fill && (params.textAutoColor === 'true' || params.textAutoColor === '1')) {
+            const bg = params.textBg || params.bg || params.overlayBg || params.obg || params.color || '#3f3f3f';
+            const c = pickContrastingColor(bg);
+            fill = c.fill;
+        }
         if (strokeWidth > 0) {
             ctx.lineJoin = 'round';
             ctx.lineWidth = strokeWidth;
             ctx.strokeStyle = stroke;
             ctx.strokeText(text, drawX, drawY);
         }
-        ctx.fillStyle = fill;
+        ctx.fillStyle = fill || '#fff';
         ctx.fillText(text, drawX, drawY);
     }
+}
+function pickContrastingColor(bg) {
+    const hex = normalizeHex(bg) || '#3f3f3f';
+    const { r, g, b } = hexToRgb(hex);
+    // Relative luminance
+    const srgb = [r, g, b].map(v => {
+        const c = v / 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    const L = 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+    // Choose white for dark backgrounds, black for light
+    return { fill: L < 0.53 ? '#ffffff' : '#111111' };
+}
+function normalizeHex(s) {
+    const m = s.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (!m)
+        return null;
+    let h = m[1];
+    if (h.length === 3)
+        h = h.split('').map(c => c + c).join('');
+    return '#' + h.toLowerCase();
+}
+function hexToRgb(h) {
+    const n = normalizeHex(h) || '#000000';
+    const r = parseInt(n.slice(1, 3), 16);
+    const g = parseInt(n.slice(3, 5), 16);
+    const b = parseInt(n.slice(5, 7), 16);
+    return { r, g, b };
 }
 /**
  * Create a text overlay postprocess function
@@ -97,7 +138,7 @@ export class OverlayText extends BaseOp {
  * @example
  * ```typescript
  * const postprocess = overlayText();
- * // Use in registerStyleImageMissingHandler
+ * // Use in registerNamedImageHandlers
  * ```
  */
 export function overlayText() {

@@ -252,7 +252,7 @@ export class OverlayGrid extends BaseOp {
  * @example
  * ```typescript
  * const postprocess = overlayGrid({ icon1: '<svg>...</svg>', icon2: '<svg>...</svg>' });
- * // Use in registerStyleImageMissingHandler
+ * // Use in registerNamedImageHandlers
  * ```
  */
 export function overlayGrid(svgIcons) {

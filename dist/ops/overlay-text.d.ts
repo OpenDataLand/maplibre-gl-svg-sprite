@@ -3,7 +3,8 @@ import { BaseOp } from './base.js';
  * Post-processing operation to overlay text on an image
  *
  * Supports query parameters: text, label, fontSize, fontWeight, fontFamily,
- * textColor, fill, textStroke, textStrokeWidth, textPadding, textAnchor, anchor, tx, ty
+ * textColor, fill, textStroke, textStrokeWidth, textPadding, textAnchor, anchor, tx, ty,
+ * textAutoColor (boolean), textUppercase (boolean)
  *
  * @example
  * ```typescript
@@ -30,7 +31,7 @@ export declare class OverlayText extends BaseOp {
  * @example
  * ```typescript
  * const postprocess = overlayText();
- * // Use in registerStyleImageMissingHandler
+ * // Use in registerNamedImageHandlers
  * ```
  */
 export declare function overlayText(): import("./base.js").Postprocess;

@@ -75,7 +75,7 @@ export declare class OverlaySvg extends BaseOp {
  * @example
  * ```typescript
  * const postprocess = overlaySvg({ marker: '<svg>...</svg>' });
- * // Use in registerStyleImageMissingHandler
+ * // Use in registerNamedImageHandlers
  * ```
  */
 export declare function overlaySvg(svgIcons: Record<string, string>): import("./base.js").Postprocess;

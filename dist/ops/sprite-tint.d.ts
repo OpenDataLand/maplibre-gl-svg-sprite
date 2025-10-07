@@ -43,7 +43,7 @@ export declare class SpriteTint extends BaseOp {
  * @example
  * ```typescript
  * const postprocess = spriteTint();
- * // Use in registerStyleImageMissingHandler
+ * // Use in registerNamedImageHandlers
  * ```
  */
 export declare function spriteTint(): import("./base.js").Postprocess;

@@ -21,19 +21,25 @@ var MaplibreSvgSprite = (() => {
   // dist/index.js
   var index_exports = {};
   __export(index_exports, {
+    IconExprBuilder: () => IconExprBuilder,
+    RouteUrlBuilder: () => RouteUrlBuilder,
     SpriteBuilder: () => SpriteBuilder,
     SvgUrlBuilder: () => SvgUrlBuilder,
+    buildDefaultNamedRoutes: () => buildDefaultNamedRoutes,
+    buildRouteUrl: () => buildRouteUrl,
     buildSprite: () => generateBrowserSprite,
     buildSpriteRegistryFromIcons: () => buildSpriteRegistryFromIcons,
     buildSvgUrl: () => buildSvgUrl,
     createAnimatedSvgImage: () => createAnimatedSvgImage,
     generateBrowserSprite: () => generateBrowserSprite,
+    iconExpr: () => iconExpr,
     ops: () => ops_exports,
+    registerNamedImageHandlers: () => registerNamedImageHandlers,
     registerOneShotSpriteFromIcons: () => registerOneShotSpriteFromIcons,
     registerProtocolFromIcons: () => registerProtocolFromIcons,
     registerSVGProtocol: () => registerSVGProtocol,
     registerSpriteFromIcons: () => registerProtocolFromIcons,
-    registerStyleImageMissingHandler: () => registerStyleImageMissingHandler,
+    routeUrl: () => routeUrl,
     svgUrl: () => svgUrl
   });
 
@@ -496,14 +502,20 @@ var MaplibreSvgSprite = (() => {
       super(id);
     }
     async run(ctx, W, H, params) {
-      const text = params.text || params.label;
+      let text = params.text || params.label;
       if (!text)
         return;
+      if (params.textUppercase === "true" || params.textUppercase === "1") {
+        try {
+          text = String(text).toUpperCase();
+        } catch {
+        }
+      }
       const fontSize = params.fontSize ? Number(params.fontSize) : 14;
       const fontWeight = params.fontWeight || "bold";
       const fontStyle = params.fontStyle || "normal";
       const fontFamily = params.fontFamily || "system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-      const fill = params.textColor || params.fill || "#fff";
+      let fill = params.textColor || params.fill || "";
       const stroke = params.textStroke || "#000";
       const strokeWidth = params.textStrokeWidth ? Number(params.textStrokeWidth) : 3;
       const padding = params.textPadding ? Number(params.textPadding) : 0;
@@ -541,16 +553,47 @@ var MaplibreSvgSprite = (() => {
       }
       const drawX = x;
       const drawY = y;
+      if (!fill && (params.textAutoColor === "true" || params.textAutoColor === "1")) {
+        const bg = params.textBg || params.bg || params.overlayBg || params.obg || params.color || "#3f3f3f";
+        const c = pickContrastingColor(bg);
+        fill = c.fill;
+      }
       if (strokeWidth > 0) {
         ctx.lineJoin = "round";
         ctx.lineWidth = strokeWidth;
         ctx.strokeStyle = stroke;
         ctx.strokeText(text, drawX, drawY);
       }
-      ctx.fillStyle = fill;
+      ctx.fillStyle = fill || "#fff";
       ctx.fillText(text, drawX, drawY);
     }
   };
+  function pickContrastingColor(bg) {
+    const hex = normalizeHex(bg) || "#3f3f3f";
+    const { r, g, b } = hexToRgb(hex);
+    const srgb = [r, g, b].map((v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    const L = 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+    return { fill: L < 0.53 ? "#ffffff" : "#111111" };
+  }
+  function normalizeHex(s) {
+    const m = s.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (!m)
+      return null;
+    let h = m[1];
+    if (h.length === 3)
+      h = h.split("").map((c) => c + c).join("");
+    return "#" + h.toLowerCase();
+  }
+  function hexToRgb(h) {
+    const n = normalizeHex(h) || "#000000";
+    const r = parseInt(n.slice(1, 3), 16);
+    const g = parseInt(n.slice(3, 5), 16);
+    const b = parseInt(n.slice(5, 7), 16);
+    return { r, g, b };
+  }
   function overlayText() {
     return asPostprocess(new OverlayText());
   }
@@ -774,9 +817,9 @@ var MaplibreSvgSprite = (() => {
   }
 
   // dist/utils/params.js
-  function parseQuery(qs) {
+  function parseQuery(qs2) {
     const out = {};
-    const q = qs.startsWith("?") ? qs.slice(1) : qs;
+    const q = qs2.startsWith("?") ? qs2.slice(1) : qs2;
     if (!q)
       return out;
     try {
@@ -1226,251 +1269,6 @@ var MaplibreSvgSprite = (() => {
     return () => maplibre.removeProtocol(protocol);
   }
 
-  // dist/missing-image.js
-  function registerStyleImageMissingHandler(map, options) {
-    const toAddImageInput = (img, w, h) => {
-      try {
-        if (typeof ImageData !== "undefined" && img instanceof ImageData)
-          return img;
-      } catch {
-      }
-      try {
-        if (typeof HTMLImageElement !== "undefined" && img instanceof HTMLImageElement)
-          return img;
-      } catch {
-      }
-      try {
-        const c = document.createElement("canvas");
-        const ww = w || img && (img.width || img.naturalWidth) || 1;
-        const hh = h || img && (img.height || img.naturalHeight) || 1;
-        c.width = ww;
-        c.height = hh;
-        const cctx = c.getContext("2d");
-        if (!cctx)
-          return img;
-        try {
-          cctx.drawImage(img, 0, 0, ww, hh);
-        } catch {
-        }
-        return cctx.getImageData(0, 0, ww, hh);
-      } catch {
-      }
-      return img;
-    };
-    const addOrUpdateAndRepaint = (name, image, pixelRatio, w, h) => {
-      try {
-        const prepared = toAddImageInput(image, w, h);
-        const has = map.hasImage && map.hasImage(name);
-        if (has && map.updateImage) {
-          try {
-            map.updateImage(name, prepared, { pixelRatio });
-            if (options.debug)
-              console.log("[sim] updated image", name);
-          } catch (e) {
-            try {
-              if (map.removeImage)
-                map.removeImage(name);
-            } catch {
-            }
-            map.addImage(name, prepared, { pixelRatio });
-            if (options.debug)
-              console.log("[sim] replaced image (fallback)", name);
-          }
-        } else if (has && !map.updateImage) {
-          try {
-            if (map.removeImage)
-              map.removeImage(name);
-          } catch {
-          }
-          map.addImage(name, prepared, { pixelRatio });
-          if (options.debug)
-            console.log("[sim] replaced image (no updateImage)", name);
-        } else if (!has) {
-          map.addImage(name, prepared, { pixelRatio });
-          if (options.debug)
-            console.log("[sim] added image", name);
-        }
-        if (map.triggerRepaint)
-          map.triggerRepaint();
-      } catch (err) {
-        if (options.debug)
-          console.warn("[sim] addImage failed", name, err);
-        try {
-          if (map.triggerRepaint)
-            map.triggerRepaint();
-        } catch {
-        }
-      }
-    };
-    const handler = async (e) => {
-      var _a;
-      try {
-        const id = e.id || "";
-        if (!id.includes("?"))
-          return;
-        const [base, query = ""] = id.split("?");
-        const params = parseQuery(query);
-        if (options.debug)
-          console.log("[styleimagemissing]", { id, base, params });
-        const color = params.color;
-        const width = params.width ? Number(params.width) : void 0;
-        const height = params.height ? Number(params.height) : void 0;
-        const dpr = typeof window !== "undefined" && (window.devicePixelRatio || 1) || 1;
-        const pixelRatio = params.pixelRatio ? Number(params.pixelRatio) : dpr;
-        if (!params.pixelRatio)
-          params.pixelRatio = String(pixelRatio);
-        const useDprBackBuffer = options.dprBackBuffer !== false;
-        if (options.eagerPlaceholder) {
-          try {
-            if (!map.hasImage || !map.hasImage(id)) {
-              const wCss = typeof width === "number" ? width : 1;
-              const hCss = typeof height === "number" ? height : 1;
-              const Wpx = Math.max(1, Math.round(wCss * pixelRatio));
-              const Hpx = Math.max(1, Math.round(hCss * pixelRatio));
-              const ph = document.createElement("canvas");
-              ph.width = Wpx;
-              ph.height = Hpx;
-              const phctx = ph.getContext("2d");
-              if (phctx)
-                phctx.clearRect(0, 0, Wpx, Hpx);
-              addOrUpdateAndRepaint(id, ph, pixelRatio, Wpx, Hpx);
-            }
-          } catch {
-          }
-        }
-        if (options.svgIcons && options.svgIcons[base]) {
-          if (options.debug)
-            console.log("[sim] generating from svgIcons for", base);
-          let svg = applySvgParams(options.svgIcons[base], params);
-          if (options.transformSvg)
-            svg = options.transformSvg(svg, params);
-          const { bitmap, width: w, height: h } = await svgToBitmap(svg, pixelRatio);
-          const canvas = document.createElement("canvas");
-          if (useDprBackBuffer) {
-            canvas.width = w;
-            canvas.height = h;
-          } else {
-            canvas.width = Math.max(1, Math.round(w / pixelRatio));
-            canvas.height = Math.max(1, Math.round(h / pixelRatio));
-          }
-          const ctx = canvas.getContext("2d");
-          if (!ctx)
-            return;
-          if (useDprBackBuffer)
-            ctx.drawImage(bitmap, 0, 0);
-          else
-            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-          if (options.postprocessCanvas)
-            await options.postprocessCanvas(ctx, canvas.width, canvas.height, params);
-          addOrUpdateAndRepaint(id, canvas, pixelRatio, canvas.width, canvas.height);
-          return;
-        }
-        if (options.protocolRegistry && options.spriteKey) {
-          if (options.debug)
-            console.log("[sim] generating from sprite registry for", base);
-          const key = options.spriteKey;
-          const entry = options.protocolRegistry[key];
-          const ratio = pixelRatio >= 1.5 && entry[2] ? 2 : 1;
-          const assets = entry[ratio];
-          if (!assets)
-            return;
-          const rect = assets.json[base];
-          if (!rect)
-            return;
-          const blob = new Blob([assets.png], { type: "image/png" });
-          const url = URL.createObjectURL(blob);
-          try {
-            const img = await blobToImage(blob);
-            const canvas = document.createElement("canvas");
-            const srcRatio = rect.pixelRatio || 1;
-            const wCss = typeof width === "number" ? width : Math.max(1, Math.round(rect.width / srcRatio));
-            const hCss = typeof height === "number" ? height : Math.max(1, Math.round(rect.height / srcRatio));
-            const Wpx = Math.max(1, Math.round(wCss * pixelRatio));
-            const Hpx = Math.max(1, Math.round(hCss * pixelRatio));
-            if (useDprBackBuffer) {
-              canvas.width = Wpx;
-              canvas.height = Hpx;
-            } else {
-              canvas.width = wCss;
-              canvas.height = hCss;
-            }
-            const ctx = canvas.getContext("2d");
-            if (!ctx)
-              return;
-            if (useDprBackBuffer && pixelRatio !== 1)
-              ctx.scale(pixelRatio, pixelRatio);
-            ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height, 0, 0, wCss, hCss);
-            if (color)
-              applySpriteTint(ctx, wCss, hCss, color);
-            if (options.postprocessCanvas)
-              await options.postprocessCanvas(ctx, wCss, hCss, params);
-            addOrUpdateAndRepaint(id, canvas, pixelRatio, useDprBackBuffer ? Wpx : wCss, useDprBackBuffer ? Hpx : hCss);
-          } finally {
-            URL.revokeObjectURL(url);
-          }
-          return;
-        }
-        if (options.postprocessCanvas) {
-          if (options.debug)
-            console.log("[sim] synthesizing image via postprocess only for", id);
-          let wCss = params.width ? Number(params.width) : 64;
-          let hCss = params.height ? Number(params.height) : 64;
-          const measurer = (_a = options.postprocessCanvas) === null || _a === void 0 ? void 0 : _a.measure;
-          if ((!params.width || !params.height) && typeof measurer === "function") {
-            try {
-              const m = measurer(params);
-              if (m && Number.isFinite(m.width) && Number.isFinite(m.height)) {
-                const natW = Math.max(1, Math.round(m.width));
-                const natH = Math.max(1, Math.round(m.height));
-                if (params.width && !params.height) {
-                  const scale = Math.max(0.01, Number(params.width) / natW);
-                  wCss = Number(params.width);
-                  hCss = Math.max(1, Math.round(natH * scale));
-                  params.height = String(hCss);
-                } else if (params.height && !params.width) {
-                  const scale = Math.max(0.01, Number(params.height) / natH);
-                  hCss = Number(params.height);
-                  wCss = Math.max(1, Math.round(natW * scale));
-                  params.width = String(wCss);
-                } else if (!params.width && !params.height) {
-                  wCss = natW;
-                  hCss = natH;
-                  params.width = String(wCss);
-                  params.height = String(hCss);
-                }
-              }
-            } catch (e2) {
-              if (options.debug)
-                console.warn("[sim] measurer error", e2);
-            }
-          }
-          const Wpx = Math.max(1, Math.round(wCss * pixelRatio));
-          const Hpx = Math.max(1, Math.round(hCss * pixelRatio));
-          const canvas = document.createElement("canvas");
-          if (useDprBackBuffer) {
-            canvas.width = Wpx;
-            canvas.height = Hpx;
-          } else {
-            canvas.width = wCss;
-            canvas.height = hCss;
-          }
-          const ctx = canvas.getContext("2d");
-          if (!ctx)
-            return;
-          if (useDprBackBuffer && pixelRatio !== 1)
-            ctx.scale(pixelRatio, pixelRatio);
-          if (options.postprocessCanvas)
-            await options.postprocessCanvas(ctx, wCss, hCss, params);
-          addOrUpdateAndRepaint(id, canvas, pixelRatio, useDprBackBuffer ? Wpx : wCss, useDprBackBuffer ? Hpx : hCss);
-          return;
-        }
-      } catch {
-      }
-    };
-    map.on("styleimagemissing", handler);
-    return () => map.off("styleimagemissing", handler);
-  }
-
   // dist/utils/animated-svg.js
   var ANIMATE_TAGS = ["animate", "animateTransform", "animateMotion", "animateColor", "set", "discard"];
   var toCamel = (name) => name.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
@@ -1747,6 +1545,307 @@ var MaplibreSvgSprite = (() => {
   };
   function svgUrl(icon, protocol) {
     return new SvgUrlBuilder(icon, protocol);
+  }
+  function buildRouteUrl(route, params = {}) {
+    if (!route)
+      throw new Error("route parameter is required");
+    const queryString = buildQueryString(params);
+    return `${route}${queryString}`;
+  }
+  var RouteUrlBuilder = class {
+    constructor(route) {
+      this.params = {};
+      this.route = route;
+    }
+    size(width, height) {
+      this.params.width = width;
+      this.params.height = height !== null && height !== void 0 ? height : width;
+      return this;
+    }
+    pixelRatio(ratio) {
+      this.params.pixelRatio = ratio;
+      return this;
+    }
+    colors(opts) {
+      if (opts.fg)
+        this.params.fg = opts.fg;
+      if (opts.bg)
+        this.params.bg = opts.bg;
+      if (opts.color)
+        this.params.color = opts.color;
+      return this;
+    }
+    tint(color) {
+      this.params.tint = color;
+      return this;
+    }
+    text(content, opts) {
+      this.params.text = content;
+      if (opts)
+        Object.assign(this.params, opts);
+      return this;
+    }
+    overlay(iconId, opts) {
+      this.params.overlay = iconId;
+      if (opts)
+        Object.assign(this.params, opts);
+      return this;
+    }
+    grid(iconIds, opts) {
+      this.params.icons = iconIds.join(",");
+      if (opts)
+        Object.assign(this.params, opts);
+      return this;
+    }
+    param(key, value) {
+      this.params[key] = value;
+      return this;
+    }
+    build() {
+      return buildRouteUrl(this.route, this.params);
+    }
+  };
+  function routeUrl(route) {
+    return new RouteUrlBuilder(route);
+  }
+
+  // dist/utils/named-sim.js
+  function parseQuery2(qs2) {
+    const out = {};
+    (qs2 || "").split("&").forEach((p) => {
+      if (!p)
+        return;
+      const [k, v = ""] = p.split("=");
+      try {
+        out[decodeURIComponent(k)] = decodeURIComponent(v.replace(/\+/g, " "));
+      } catch {
+        out[k] = v;
+      }
+    });
+    return out;
+  }
+  function toAddImageInput(img, w, h) {
+    try {
+      if (typeof ImageData !== "undefined" && img instanceof ImageData)
+        return img;
+    } catch {
+    }
+    try {
+      if (typeof HTMLImageElement !== "undefined" && img instanceof HTMLImageElement)
+        return img;
+    } catch {
+    }
+    try {
+      const c = document.createElement("canvas");
+      const ww = w || img && (img.width || img.naturalWidth) || 1;
+      const hh = h || img && (img.height || img.naturalHeight) || 1;
+      c.width = ww;
+      c.height = hh;
+      const cctx = c.getContext("2d");
+      if (!cctx)
+        return img;
+      try {
+        cctx.drawImage(img, 0, 0, ww, hh);
+      } catch {
+      }
+      return cctx.getImageData(0, 0, ww, hh);
+    } catch {
+    }
+    return img;
+  }
+  function addOrUpdate(map, name, image, pixelRatio, w, h) {
+    try {
+      const prepared = toAddImageInput(image, w, h);
+      const has = map.hasImage && map.hasImage(name);
+      if (has && map.updateImage) {
+        try {
+          map.updateImage(name, prepared, { pixelRatio });
+        } catch {
+          try {
+            if (map.removeImage)
+              map.removeImage(name);
+          } catch {
+          }
+          map.addImage(name, prepared, { pixelRatio });
+        }
+      } else if (has && !map.updateImage) {
+        try {
+          if (map.removeImage)
+            map.removeImage(name);
+        } catch {
+        }
+        map.addImage(name, prepared, { pixelRatio });
+      } else if (!has) {
+        map.addImage(name, prepared, { pixelRatio });
+      }
+      if (map.triggerRepaint)
+        map.triggerRepaint();
+    } catch {
+    }
+  }
+  function registerNamedImageHandlers(map, routes, opts = {}) {
+    const debug = !!opts.debug;
+    const dprBackBuffer = opts.dprBackBuffer !== false;
+    const handler = async (e) => {
+      var _a;
+      try {
+        const id = e.id || "";
+        if (!id.includes("?"))
+          return;
+        const [base, queryStr = ""] = id.split("?");
+        const route = (_a = routes[base]) !== null && _a !== void 0 ? _a : routes["*"];
+        if (!route)
+          return;
+        const params = parseQuery2(queryStr);
+        const dpr = typeof window !== "undefined" && (window.devicePixelRatio || 1) || 1;
+        const pixelRatio = params.pixelRatio ? Number(params.pixelRatio) : dpr;
+        if (!params.pixelRatio)
+          params.pixelRatio = String(pixelRatio);
+        let wCss = params.width ? Number(params.width) : 64;
+        let hCss = params.height ? Number(params.height) : 64;
+        const measurer = typeof route === "function" ? route.measure : route === null || route === void 0 ? void 0 : route.measure;
+        if ((!params.width || !params.height) && typeof measurer === "function") {
+          try {
+            const m = measurer(params);
+            if (m && Number.isFinite(m.width) && Number.isFinite(m.height)) {
+              const natW = Math.max(1, Math.round(m.width));
+              const natH = Math.max(1, Math.round(m.height));
+              if (params.width && !params.height) {
+                const scale = Math.max(0.01, Number(params.width) / natW);
+                wCss = Number(params.width);
+                hCss = Math.max(1, Math.round(natH * scale));
+                params.height = String(hCss);
+              } else if (params.height && !params.width) {
+                const scale = Math.max(0.01, Number(params.height) / natH);
+                hCss = Number(params.height);
+                wCss = Math.max(1, Math.round(natW * scale));
+                params.width = String(wCss);
+              } else if (!params.width && !params.height) {
+                wCss = natW;
+                hCss = natH;
+                params.width = String(wCss);
+                params.height = String(hCss);
+              }
+            }
+          } catch {
+          }
+        }
+        const Wpx = Math.max(1, Math.round(wCss * pixelRatio));
+        const Hpx = Math.max(1, Math.round(hCss * pixelRatio));
+        const canvas = document.createElement("canvas");
+        if (dprBackBuffer) {
+          canvas.width = Wpx;
+          canvas.height = Hpx;
+        } else {
+          canvas.width = wCss;
+          canvas.height = hCss;
+        }
+        const ctx = canvas.getContext("2d");
+        if (!ctx)
+          return;
+        if (dprBackBuffer && pixelRatio !== 1)
+          ctx.scale(pixelRatio, pixelRatio);
+        const post = typeof route === "function" ? route : route.postprocess;
+        await post(ctx, wCss, hCss, params);
+        addOrUpdate(map, id, canvas, pixelRatio, dprBackBuffer ? Wpx : wCss, dprBackBuffer ? Hpx : hCss);
+      } catch (err) {
+        if (debug)
+          try {
+            console.warn("[named-sim] handler error", err);
+          } catch {
+          }
+      }
+    };
+    map.on("styleimagemissing", handler);
+    return () => map.off("styleimagemissing", handler);
+  }
+  function buildDefaultNamedRoutes(svgIcons) {
+    return {
+      $text: overlayText(),
+      $svg: overlaySvg(svgIcons),
+      $badge: chain(overlaySvg(svgIcons), overlayText()),
+      // Presets: identical pipelines; conventionally paired with params:
+      // - $badgeInside: textAnchor=center (inside shield)
+      // - $badgeStacked: textAnchor=bottom with overlay anchored at top
+      $badgeInside: chain(overlaySvg(svgIcons), overlayText()),
+      $badgeStacked: chain(overlaySvg(svgIcons), overlayText()),
+      $grid: overlayGrid(svgIcons)
+    };
+  }
+
+  // dist/utils/icon-expr.js
+  function qs(obj = {}) {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(obj)) {
+      if (v === void 0 || v === null || v === "")
+        continue;
+      params.set(k, String(v));
+    }
+    const s = params.toString();
+    return s ? `?${s}` : "";
+  }
+  var IconExprBuilder = class {
+    constructor(route, initial) {
+      const head = route + (initial ? qs(initial) : "");
+      this.parts = ["concat", head];
+    }
+    /** Append raw query params (merged at the end). */
+    append(params) {
+      const s = qs(params);
+      if (s)
+        this.parts.push("&", s.slice(1));
+      return this;
+    }
+    /** Set overall width/height (CSS pixels). */
+    size(width, height) {
+      return this.append({ width, height: height !== null && height !== void 0 ? height : width });
+    }
+    /** Force pixel ratio for HiDPI (omit to use device DPR). */
+    pixelRatio(ratio) {
+      return this.append({ pixelRatio: ratio });
+    }
+    /**
+     * Add overlay=... (string or expression) with optional placement/size.
+     */
+    overlay(value, opts) {
+      this.parts.push("&overlay=");
+      if (Array.isArray(value))
+        this.parts.push(value);
+      else
+        this.parts.push(String(value));
+      if (opts)
+        this.append(opts);
+      return this;
+    }
+    /**
+     * Add text=... (string or expression) with optional typography/placement.
+     */
+    text(value, opts) {
+      this.parts.push("&text=");
+      if (Array.isArray(value))
+        this.parts.push(value);
+      else
+        this.parts.push(String(value));
+      if (opts)
+        this.append(opts);
+      return this;
+    }
+    /** Add an arbitrary name=value pair; value may be expression or string. */
+    param(name, value) {
+      this.parts.push("&" + name + "=");
+      if (Array.isArray(value))
+        this.parts.push(value);
+      else
+        this.parts.push(String(value));
+      return this;
+    }
+    /** Build the final MapLibre expression. */
+    build() {
+      return this.parts;
+    }
+  };
+  function iconExpr(route, initial) {
+    return new IconExprBuilder(route, initial);
   }
   return __toCommonJS(index_exports);
 })();

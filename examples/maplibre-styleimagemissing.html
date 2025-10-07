@@ -46,7 +46,7 @@
   <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js" defer></script>
   <script type="module">
     import { loadLib } from './use-lib.js';
-    const { registerStyleImageMissingHandler } = await loadLib();
+    const { registerNamedImageHandlers, ops } = await loadLib();
 
     // Load the SVG we will rasterize when MapLibre asks for an icon.
     const markerSvg = await fetch('./data/marker.svg').then((res) => res.text());
@@ -76,8 +76,8 @@
             type: 'symbol',
             source: 'restaurants',
             layout: {
-              // Note: no sprite provided. The handler below satisfies these requests.
-              'icon-image': 'marker?width=28&height=28&fg=%233fb1ce',
+              // Named route example: use built-in $svg and select which SVG via overlay=marker
+              'icon-image': '$svg?width=28&height=28&overlay=marker&fg=%233fb1ce',
               'icon-allow-overlap': true
             }
           }
@@ -87,11 +87,10 @@
       zoom: 13
     });
 
-    // Register the lazy loader. This keeps a tiny cache internally and cleans up on remove().
-    const unregister = registerStyleImageMissingHandler(map, {
-      svgIcons: { marker: markerSvg },
-      debug: false
-    });
+    // Register a named route using the built-in "$svg" pipeline
+    const unregister = registerNamedImageHandlers(map, {
+      '$svg': ops.overlaySvg({ marker: markerSvg })
+    }, { debug: false });
 
     map.on('remove', unregister);
   </script>

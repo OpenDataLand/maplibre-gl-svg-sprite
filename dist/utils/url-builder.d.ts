@@ -82,6 +82,10 @@ export interface OverlayTextParams {
     ty?: number;
     /** Font load timeout in ms (default: 1500) */
     fontLoadTimeout?: number;
+    /** Auto-pick contrasting text color from bg/overlay colors when textColor not provided */
+    textAutoColor?: boolean;
+    /** Uppercase the text content */
+    textUppercase?: boolean;
 }
 /**
  * Parameters for SVG overlay operation
@@ -177,6 +181,10 @@ export interface OverlayGridParams {
  * Complete parameter set combining all operation types
  */
 export type SvgUrlParams = BaseSvgParams & SvgColorParams & SpriteTintParams & OverlayTextParams & OverlaySvgParams & OverlayGridParams;
+/**
+ * Complete parameter set for named-route URLs (no `icon` field)
+ */
+export type RouteUrlParams = Omit<BaseSvgParams, 'icon' | 'protocol'> & SvgColorParams & SpriteTintParams & OverlayTextParams & OverlaySvgParams & OverlayGridParams;
 /**
  * Build a type-safe SVG protocol URL
  *
@@ -305,3 +313,28 @@ export declare class SvgUrlBuilder {
  * ```
  */
 export declare function svgUrl(icon: string, protocol?: string): SvgUrlBuilder;
+/**
+ * Build a type-safe named-route URL (e.g., 'airport?width=44&...')
+ */
+export declare function buildRouteUrl(route: string, params?: RouteUrlParams): string;
+/** Fluent builder for named-route URLs */
+export declare class RouteUrlBuilder {
+    private route;
+    private params;
+    constructor(route: string);
+    size(width: number, height?: number): this;
+    pixelRatio(ratio: number): this;
+    colors(opts: {
+        fg?: string;
+        bg?: string;
+        color?: string;
+    }): this;
+    tint(color: string): this;
+    text(content: string, opts?: Partial<OverlayTextParams>): this;
+    overlay(iconId: string, opts?: Partial<OverlaySvgParams>): this;
+    grid(iconIds: string[], opts?: Partial<OverlayGridParams>): this;
+    param<K extends keyof RouteUrlParams>(key: K, value: RouteUrlParams[K]): this;
+    build(): string;
+}
+/** Create a fluent builder for named-route URLs */
+export declare function routeUrl(route: string): RouteUrlBuilder;

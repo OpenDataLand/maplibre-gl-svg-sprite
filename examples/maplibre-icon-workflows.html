@@ -49,7 +49,7 @@
   <div id="map"></div>
   <details class="info" open>
     <summary>Icon Workflows</summary>
-    <p>Each marker below is generated on-demand with <code>registerStyleImageMissingHandler</code>.</p>
+    <p>Each marker below is generated on-demand with <code>registerNamedImageHandlers</code>.</p>
     <ul id="example-list"></ul>
   </details>
 
@@ -57,7 +57,7 @@
   <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js" defer></script>
   <script type="module">
     import { loadLib } from './use-lib.js';
-    const { registerStyleImageMissingHandler, ops } = await loadLib();
+    const { registerNamedImageHandlers, ops } = await loadLib();
 
     // 1) Define the SVG building blocks that the ops can reference.
     const svgIcons = {
@@ -212,15 +212,14 @@
     }
 
     // 4) Register the handler with a pipeline of overlay ops.
-    const unregister = registerStyleImageMissingHandler(map, {
-      svgIcons,
-      postprocessCanvas: ops.chain(
+    const unregister = registerNamedImageHandlers(map, {
+      // Use '*' to route all requested ids to this pipeline
+      '*': ops.chain(
         ops.overlaySvg(svgIcons),
         ops.overlayText(),
         ops.overlayGrid(svgIcons)
-      ),
-      debug: false
-    });
+      )
+    }, { debug: false });
 
     map.on('remove', unregister);
 
